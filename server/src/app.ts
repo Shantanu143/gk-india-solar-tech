@@ -9,8 +9,23 @@ import routes from "./routes";
 
 export const app: Express = express();
 
+// Render terminates TLS in front of the app; this makes `secure` cookies and rate-limit IPs work correctly.
+app.set("trust proxy", 1);
+
 app.use(helmet());
-app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true }));
+app.use(
+  cors({
+    origin(origin, callback) {
+      // No Origin header (server-to-server, curl, health checks) — allow.
+      if (!origin || env.CLIENT_ORIGINS.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`Origin ${origin} is not allowed by CORS.`));
+    },
+    credentials: true,
+  })
+);
 app.use(cookieParser());
 // Raised from the default 1mb — survey photos are submitted as base64 data URIs.
 app.use(express.json({ limit: "15mb" }));

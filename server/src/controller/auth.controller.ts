@@ -8,11 +8,15 @@ import { env } from "../config/env";
 
 const REFRESH_COOKIE_NAME = "refreshToken";
 
+const isProduction = env.NODE_ENV === "production";
+
 function setRefreshCookie(res: Response, token: string): void {
   res.cookie(REFRESH_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
-    sameSite: "lax",
+    // Frontend (Vercel) and backend (Render) are different sites in production, so the cookie
+    // needs SameSite=None (which browsers only honor alongside Secure) to be sent cross-site.
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
     maxAge: env.REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
     path: "/api/auth",
   });
