@@ -5,7 +5,18 @@ import { ApiError } from "../util/ApiError";
 import { toPublicLead, type PublicLead } from "../util/serializeLead";
 import { canTransitionLead, isTerminalLeadStatus } from "../util/leadWorkflow";
 import { LEAD_STATUS_LABEL } from "../util/leadStatusLabels";
-import type { LeadCustomer, LeadInterest, LeadLocation, LeadPriority, LeadSource, LeadStatus, LostReason, ProjectType, SolarRecommendation } from "../models/Lead.model";
+import type {
+  LeadCustomer,
+  LeadInterest,
+  LeadLocation,
+  LeadPriority,
+  LeadSource,
+  LeadStatus,
+  LostReason,
+  PartnerLeadNote,
+  ProjectType,
+  SolarRecommendation,
+} from "../models/Lead.model";
 
 export interface PaginatedLeads {
   items: PublicLead[];
@@ -34,6 +45,11 @@ export const leadService = {
     billDocumentName?: string;
     solarRecommendation: SolarRecommendation;
     source: LeadSource;
+    /** Set when a Partner is submitting this lead on a customer's behalf via their dashboard. */
+    partnerId?: string;
+    partnerNote?: PartnerLeadNote;
+    actorName?: string;
+    activityDescription?: string;
   }): Promise<PublicLead> {
     const leadId = await leadRepository.nextLeadId();
     const lead = await leadRepository.create({
@@ -49,12 +65,14 @@ export const leadService = {
       interest: "MEDIUM",
       priority: "MEDIUM",
       assignedEmployeeId: null,
+      partnerId: input.partnerId ?? null,
+      partnerNote: input.partnerNote,
     });
     await activityService.log({
       leadId: lead._id.toString(),
       type: "LEAD_CREATED",
-      actorName: "System",
-      description: "Lead created from website solar estimate",
+      actorName: input.actorName ?? "System",
+      description: input.activityDescription ?? "Lead created from website solar estimate",
     });
     return toPublicLead(lead);
   },

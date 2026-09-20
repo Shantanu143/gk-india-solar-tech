@@ -37,3 +37,12 @@ export const SolarEstimateSuccess = lazy(() =>
   })),
 );
 export const Subsidy = lazy(() => import("@/pages/Subsidy/Subsidy").then((m) => ({ default: m.Subsidy })));
+export const BecomePartnerPage = lazy(() =>
+  import("@/pages/Partners/BecomePartnerPage").then((m) => ({ default: m.BecomePartnerPage })),
+);
+export const PartnerApplyPage = lazy(() =>
+  import("@/pages/Partners/PartnerApplyPage").then((m) => ({ default: m.PartnerApplyPage })),
+);
+export const PartnerApplySuccessPage = lazy(() =>
+  import("@/pages/Partners/PartnerApplySuccessPage").then((m) => ({ default: m.PartnerApplySuccessPage })),
+);

@@ -1,7 +1,7 @@
 import type { UserRole } from "@/features/auth/types/auth";
 
 /** Every real role except CUSTOMER — the unified `UserRole` (`features/auth/types/auth.ts`) is the single source of truth. */
-export type EmployeeRole = Exclude<UserRole, "CUSTOMER">;
+export type EmployeeRole = Exclude<UserRole, "CUSTOMER" | "PARTNER">;
 
 export type EmployeeStatus = "ACTIVE" | "INACTIVE";
 

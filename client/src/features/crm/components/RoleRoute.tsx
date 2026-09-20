@@ -2,11 +2,12 @@ import { Navigate } from "react-router-dom";
 import type { ReactNode } from "react";
 import { ROUTES } from "@/constant/routes";
 import { useAuth } from "@/features/crm/hooks/authContext";
-import { CRM_ROUTES } from "@/features/crm/utils/routes";
-import type { EmployeeRole } from "@/features/employees/types/employee";
+import { dashboardPathForRole } from "@/features/auth/utils/roleRedirect";
+import type { UserRole } from "@/features/auth/types/auth";
 
 interface RoleRouteProps {
-  allow: EmployeeRole[];
+  /** Any non-CUSTOMER role — includes PARTNER, so a PartnerLayout can gate itself the same way AdminLayout/EmployeeLayout do. */
+  allow: Exclude<UserRole, "CUSTOMER">[];
   children: ReactNode;
 }
 
@@ -20,8 +21,8 @@ export function RoleRoute({ allow, children }: RoleRouteProps) {
   if (user.role === "CUSTOMER") return <Navigate to={ROUTES.home} replace />;
 
   if (!allow.includes(user.role)) {
-    const fallback = user.role === "ADMIN" || user.role === "SALES_MANAGER" ? CRM_ROUTES.adminDashboard : CRM_ROUTES.employeeDashboard;
-    return <Navigate to={fallback} replace />;
+    // Send whoever hit the wrong portal to the CRM home they actually belong in, not a generic one.
+    return <Navigate to={dashboardPathForRole(user.role)} replace />;
   }
   return <>{children}</>;
 }

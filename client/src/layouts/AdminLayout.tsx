@@ -22,6 +22,7 @@ function AdminLayoutContent() {
       badges={badges}
       leadDetailPath={CRM_ROUTES.adminLeadDetail}
       searchTargetPath={CRM_ROUTES.adminLeads}
+      theme="admin"
     />
   );
 }

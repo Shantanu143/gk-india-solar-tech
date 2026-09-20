@@ -1,8 +1,9 @@
 import type { Types } from "mongoose";
 import { LeadModel, type LeadAttrs, type LeadStatus, type LeadSource, type LeadInterest, type ProjectType } from "../models/Lead.model";
 
-export interface CreateLeadInput extends Omit<LeadAttrs, "createdAt" | "updatedAt" | "assignedEmployeeId"> {
+export interface CreateLeadInput extends Omit<LeadAttrs, "createdAt" | "updatedAt" | "assignedEmployeeId" | "partnerId"> {
   assignedEmployeeId?: string | Types.ObjectId | null;
+  partnerId?: string | Types.ObjectId | null;
 }
 
 export interface UpdateLeadInput extends Partial<Omit<LeadAttrs, "assignedEmployeeId">> {
@@ -14,6 +15,7 @@ export interface LeadFilters {
   projectType?: ProjectType;
   source?: LeadSource;
   assignedEmployeeId?: string;
+  partnerId?: string;
   interest?: LeadInterest;
   search?: string;
 }
@@ -30,6 +32,7 @@ function buildFilterQuery(filters: LeadFilters): Record<string, unknown> {
   if (filters.projectType) query.projectType = filters.projectType;
   if (filters.source) query.source = filters.source;
   if (filters.assignedEmployeeId) query.assignedEmployeeId = filters.assignedEmployeeId;
+  if (filters.partnerId) query.partnerId = filters.partnerId;
   if (filters.interest) query.interest = filters.interest;
   if (filters.search) {
     const q = filters.search.trim();

@@ -15,6 +15,8 @@ import { SurveyModel } from "../models/Survey.model";
 import { FinalSolarConfigurationModel } from "../models/FinalSolarConfiguration.model";
 import { ProductModel } from "../models/Product.model";
 import { NotificationModel } from "../models/Notification.model";
+import { PartnerModel } from "../models/Partner.model";
+import { CommissionRuleModel } from "../models/CommissionRule.model";
 import { hashPassword } from "../util/password";
 
 const SEED_PASSWORD = "Password123";
@@ -267,10 +269,153 @@ async function main() {
     logger.info(`Seeded product: ${seed.sku} — ${seed.name}`);
   }
 
+  // --- Partners ---
+  const partnerPasswordHash = await hashPassword(SEED_PASSWORD);
+
+  let referralUser = await UserModel.findOne({ email: "vikram.referral@example.com" });
+  if (!referralUser) {
+    referralUser = await UserModel.create({
+      name: "Vikram Rao",
+      email: "vikram.referral@example.com",
+      phone: "9800000101",
+      passwordHash: partnerPasswordHash,
+      role: "PARTNER",
+      status: "ACTIVE",
+    });
+  }
+  const referralPartner = await PartnerModel.findOneAndUpdate(
+    { user: referralUser._id },
+    {
+      $setOnInsert: {
+        user: referralUser._id,
+        type: "SALES_REFERRAL",
+        name: "Vikram Rao",
+        companyName: "Rao Electricals",
+        mobile: "9800000101",
+        whatsapp: "9800000101",
+        email: "vikram.referral@example.com",
+        address: { state: "Maharashtra", district: "Pune", city: "Pune", addressLine: "FC Road" },
+        howHeard: "Local electrician network",
+        applicationStatus: "APPROVED",
+        partnerId: "GKST-PT-0001",
+        reviewedBy: employeeByEmail.get("admin@gkindiasolartech.in"),
+        reviewedAt: daysAgo(20),
+      },
+    },
+    { upsert: true, new: true },
+  );
+  logger.info(`Seeded partner: ${referralPartner.email} (SALES_REFERRAL, APPROVED, ${referralPartner.partnerId})`);
+
+  let installerUser = await UserModel.findOne({ email: "sunita.installer@example.com" });
+  if (!installerUser) {
+    installerUser = await UserModel.create({
+      name: "Sunita Installations",
+      email: "sunita.installer@example.com",
+      phone: "9800000102",
+      passwordHash: partnerPasswordHash,
+      role: "PARTNER",
+      status: "ACTIVE",
+    });
+  }
+  const installerPartner = await PartnerModel.findOneAndUpdate(
+    { user: installerUser._id },
+    {
+      $setOnInsert: {
+        user: installerUser._id,
+        type: "INSTALLATION_SERVICE",
+        name: "Sunita Installations",
+        companyName: "Sunita Solar Installations",
+        mobile: "9800000102",
+        whatsapp: "9800000102",
+        email: "sunita.installer@example.com",
+        address: { state: "Maharashtra", district: "Mumbai", city: "Mumbai", addressLine: "Andheri East" },
+        howHeard: "Referred by another partner",
+        applicationStatus: "PENDING",
+        installationProfile: {
+          yearsOfExperience: 6,
+          teamSize: 8,
+          electricians: 3,
+          installers: 4,
+          weldersFabricators: 1,
+          dailyInstallationCapacityKw: 20,
+          residentialExperience: true,
+          commercialExperience: true,
+          industrialExperience: false,
+          onGridExperience: true,
+          offGridExperience: false,
+          canSiteSurvey: true,
+          canStructureFabrication: true,
+          canElectricalWork: true,
+          projectPhotos: [],
+          serviceDistricts: ["Mumbai", "Thane", "Navi Mumbai"],
+          expectedLabourRate: 3500,
+          documents: [],
+        },
+      },
+    },
+    { upsert: true, new: true },
+  );
+  logger.info(
+    `Seeded partner: ${installerPartner.email} (INSTALLATION_SERVICE, ${installerPartner.applicationStatus}${
+      installerPartner.applicationStatus === "PENDING" ? " — approve this one in the admin UI to try the flow" : ""
+    })`,
+  );
+
+  // --- Commission rules ---
+  const rulesCount = await CommissionRuleModel.countDocuments({});
+  if (rulesCount === 0) {
+    await CommissionRuleModel.create({
+      partnerType: "SALES_REFERRAL",
+      commissionType: "PERCENTAGE",
+      percent: 5,
+      paymentTrigger: "ON_BOOKING",
+      active: true,
+    });
+    await CommissionRuleModel.create({
+      partnerType: "INSTALLATION_SERVICE",
+      commissionType: "FIXED",
+      fixedAmount: 2000,
+      paymentTrigger: "ON_PROJECT_COMPLETED",
+      active: true,
+    });
+    logger.info("Seeded commission rules: 5% on booking for Sales/Referral partners, ₹2,000 on project completion for Installation/Service partners");
+  }
+
+  // --- A partner-sourced lead, so the referral partner's dashboard isn't empty on first login ---
+  const partnerLeadExists = await LeadModel.findOne({ leadId: "GK-LEAD-2026-00129" });
+  if (!partnerLeadExists) {
+    const partnerLead = await LeadModel.create({
+      leadId: "GK-LEAD-2026-00129",
+      customer: { fullName: "Manoj Kumar", mobile: "9820012349", whatsapp: "9820012349", email: "manoj.kumar@example.com", address: "Pune, Maharashtra" },
+      projectType: "RESIDENTIAL",
+      location: { pincode: "411002", city: "Pune", address: "Pune, Maharashtra" },
+      monthlyBill: 4000,
+      solarRecommendation: { recommendedCapacity: 4, estimatedPanels: 8, panelCapacity: 550, recommendedInverter: 4 },
+      source: "REFERRAL",
+      status: "CONTACTED",
+      interest: "MEDIUM",
+      priority: "MEDIUM",
+      assignedEmployeeId: amitId,
+      partnerId: referralPartner._id,
+      partnerNote: { requirement: "Wants to reduce a ₹4,000/month bill", preferredContactTime: "Evenings after 6 PM" },
+      createdAt: daysAgo(3),
+      updatedAt: daysAgo(2),
+    });
+    await ActivityModel.create({
+      lead: partnerLead._id,
+      type: "LEAD_CREATED",
+      actorName: "Vikram Rao",
+      description: "Lead submitted by partner Vikram Rao (GKST-PT-0001)",
+      createdAt: daysAgo(3, 9),
+    });
+    logger.info(`Seeded partner-sourced lead: ${partnerLead.leadId} — Manoj Kumar (submitted by ${referralPartner.name})`);
+  }
+
   logger.info("");
   logger.info("=== Seed complete ===");
   logger.info(`Shared password for every seeded employee account: ${SEED_PASSWORD}`);
   logger.info("Log in at /login with any email above (Neha Joshi is deliberately INACTIVE, to exercise that path).");
+  logger.info(`Partner logins (same password): ${referralPartner.email} (APPROVED, ${referralPartner.partnerId}), ${installerPartner.email} (PENDING)`);
 
   await disconnectDatabase();
 }

@@ -7,6 +7,8 @@ import { activityService } from "./activity.service";
 import { notificationService } from "./notification.service";
 import { customerService } from "./customer.service";
 import { projectService } from "./project.service";
+import { commissionService } from "./commission.service";
+import { PartnerModel } from "../models/Partner.model";
 import { ApiError } from "../util/ApiError";
 import { toPublicQuotation, type PublicQuotation } from "../util/serializeQuotation";
 import { calculateEmi, calculateSubsidy, LOAN_CONFIG } from "../util/emiCalculator";
@@ -225,6 +227,24 @@ export const quotationService = {
         quotation,
         systemCapacityKw: finalConfig?.systemCapacityKw ?? 0,
       });
+
+      // Booking is the "ON_BOOKING" commission trigger for a partner-sourced lead — evaluateForLead
+      // is idempotent (a no-op if a commission already exists or no rule matches), so this is safe
+      // even if accept somehow ran twice.
+      if (lead.partnerId) {
+        const partner = await PartnerModel.findById(lead.partnerId);
+        if (partner) {
+          await commissionService.evaluateForLead({
+            leadId,
+            partnerId: lead.partnerId.toString(),
+            partnerType: partner.type,
+            projectType: lead.projectType,
+            systemCapacityKw: finalConfig?.systemCapacityKw ?? 0,
+            bookingAmount: quotation.totalAmount,
+            trigger: "ON_BOOKING",
+          });
+        }
+      }
     }
 
     return toPublicQuotation(quotation);

@@ -2,11 +2,15 @@ import type { Types } from "mongoose";
 import { ProjectModel, type ProjectAttrs, type ProjectStatus } from "../models/Project.model";
 
 export interface CreateProjectInput
-  extends Omit<ProjectAttrs, "createdAt" | "updatedAt" | "lead" | "customer" | "quotation" | "assignedEmployeeId" | "documents"> {
+  extends Omit<
+    ProjectAttrs,
+    "createdAt" | "updatedAt" | "lead" | "customer" | "quotation" | "assignedEmployeeId" | "assignedPartnerId" | "documents"
+  > {
   lead: string | Types.ObjectId;
   customer: string | Types.ObjectId;
   quotation: string | Types.ObjectId;
   assignedEmployeeId?: string | Types.ObjectId | null;
+  assignedPartnerId?: string | Types.ObjectId | null;
 }
 
 export type UpdateProjectInput = Partial<Omit<ProjectAttrs, "createdAt" | "updatedAt" | "lead" | "customer" | "quotation" | "projectNumber">>;
@@ -14,6 +18,7 @@ export type UpdateProjectInput = Partial<Omit<ProjectAttrs, "createdAt" | "updat
 export interface ProjectFilters {
   status?: ProjectStatus;
   assignedEmployeeId?: string;
+  assignedPartnerId?: string;
 }
 
 export const projectRepository = {
@@ -21,6 +26,7 @@ export const projectRepository = {
     const query: Record<string, unknown> = {};
     if (filters.status) query.status = filters.status;
     if (filters.assignedEmployeeId) query.assignedEmployeeId = filters.assignedEmployeeId;
+    if (filters.assignedPartnerId) query.assignedPartnerId = filters.assignedPartnerId;
     return ProjectModel.find(query).sort({ createdAt: -1 });
   },
 

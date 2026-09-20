@@ -24,6 +24,7 @@ function EmployeeLayoutContent() {
       badges={badges}
       leadDetailPath={CRM_ROUTES.employeeLeadDetail}
       searchTargetPath={CRM_ROUTES.employeeLeads}
+      theme="employee"
     />
   );
 }

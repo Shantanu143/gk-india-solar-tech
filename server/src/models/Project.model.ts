@@ -29,6 +29,8 @@ export interface ProjectAttrs {
   status: ProjectStatus;
   systemCapacityKw: number;
   assignedEmployeeId: Types.ObjectId | null;
+  /** Set when an Installation/Service or EPC partner is executing this project instead of (or alongside) an internal employee. */
+  assignedPartnerId: Types.ObjectId | null;
   documents: ProjectDocumentFile[];
   completedAt?: Date;
   createdAt: Date;
@@ -57,6 +59,7 @@ const projectSchema = new Schema<ProjectAttrs>(
     status: { type: String, enum: PROJECT_STATUSES, required: true, default: "CREATED" },
     systemCapacityKw: { type: Number, required: true },
     assignedEmployeeId: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    assignedPartnerId: { type: Schema.Types.ObjectId, ref: "Partner", default: null },
     documents: { type: [projectDocumentFileSchema], default: [] },
     completedAt: { type: Date },
   },
@@ -65,5 +68,6 @@ const projectSchema = new Schema<ProjectAttrs>(
 
 projectSchema.index({ status: 1 });
 projectSchema.index({ assignedEmployeeId: 1 });
+projectSchema.index({ assignedPartnerId: 1 });
 
 export const ProjectModel: Model<ProjectAttrs> = model<ProjectAttrs>("Project", projectSchema);

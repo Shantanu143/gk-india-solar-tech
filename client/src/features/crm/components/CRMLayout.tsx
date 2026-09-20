@@ -4,15 +4,26 @@ import { Loader2 } from "lucide-react";
 import { CrmBackground } from "@/features/crm/components/CrmBackground";
 import { Sidebar } from "@/features/crm/components/Sidebar";
 import { Topbar } from "@/features/crm/components/Topbar";
+import { useAuth } from "@/features/crm/hooks/authContext";
 import type { CrmNavEntry } from "@/features/crm/utils/navigation";
 import { useEmployees } from "@/features/employees/hooks/useEmployees";
 import { setEmployeeCache } from "@/features/employees/utils/employeeCache";
+import { cn } from "@/lib/utils";
+
+/** Each portal's accent color — see the `.theme-*` rules in `app/index.css`. Admin needs no class; it's the default brand orange. */
+const PORTAL_THEME_CLASS: Record<"admin" | "employee" | "partner", string | undefined> = {
+  admin: undefined,
+  employee: "theme-employee",
+  partner: "theme-partner",
+};
 
 interface CRMLayoutProps {
   navItems: CrmNavEntry[];
   badges?: Partial<Record<string, number>>;
   leadDetailPath: (leadId: string) => string;
   searchTargetPath: string;
+  /** Which portal this is — drives the accent color scheme. */
+  theme: "admin" | "employee" | "partner";
 }
 
 function currentPageTitle(pathname: string, navItems: CrmNavEntry[]): string {
@@ -21,13 +32,16 @@ function currentPageTitle(pathname: string, navItems: CrmNavEntry[]): string {
   return match?.label ?? "Dashboard";
 }
 
-export function CRMLayout({ navItems, badges, leadDetailPath, searchTargetPath }: CRMLayoutProps) {
+export function CRMLayout({ navItems, badges, leadDetailPath, searchTargetPath, theme }: CRMLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { data: employees } = useEmployees();
+  // A PARTNER (or CUSTOMER, though they never reach this layout) has no permission to list
+  // employees — skip the fetch entirely rather than firing a request guaranteed to 403.
+  const { can } = useAuth();
+  const { data: employees } = useEmployees({ enabled: can("employees.view") });
   useEffect(() => {
     if (employees) setEmployeeCache(employees);
   }, [employees]);
@@ -41,7 +55,7 @@ export function CRMLayout({ navItems, badges, leadDetailPath, searchTargetPath }
   }
 
   return (
-    <div className="flex min-h-dvh">
+    <div className={cn("flex min-h-dvh", PORTAL_THEME_CLASS[theme])}>
       <CrmBackground />
       <Sidebar
         items={navItems}

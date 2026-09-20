@@ -24,7 +24,7 @@ function NavLinkRow({ item, badges, collapsed }: { item: CrmNavLink; badges?: Pa
       className={({ isActive }) =>
         cn(
           "flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-sm font-medium text-white/65 transition-all duration-200 hover:bg-white/10 hover:text-white",
-          isActive && "border-orange/30 bg-orange/20 text-white shadow-[0_0_0_1px_rgba(253,128,2,0.15)] backdrop-blur-sm",
+          isActive && "border-orange/30 bg-orange/20 text-white shadow-[0_0_0_1px_rgb(from_var(--color-orange)_r_g_b/15%)] backdrop-blur-sm",
           collapsed && "justify-center px-2",
         )
       }

@@ -3,7 +3,7 @@
  * app, public site and CRM alike (`features/crm/hooks/authContext.ts` adapts this for CRM
  * components). Matches `server/src/models/User.model.ts` exactly.
  */
-export type UserRole = "ADMIN" | "SALES_MANAGER" | "SALES_EXECUTIVE" | "SURVEY_ENGINEER" | "CUSTOMER";
+export type UserRole = "ADMIN" | "SALES_MANAGER" | "SALES_EXECUTIVE" | "SURVEY_ENGINEER" | "CUSTOMER" | "PARTNER";
 
 export type UserStatus = "ACTIVE" | "INACTIVE";
 
@@ -23,4 +23,5 @@ export const USER_ROLE_LABEL: Record<UserRole, string> = {
   SALES_EXECUTIVE: "Sales Executive",
   SURVEY_ENGINEER: "Survey Engineer",
   CUSTOMER: "Customer",
+  PARTNER: "Partner",
 };

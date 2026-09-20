@@ -45,3 +45,11 @@ export async function addProjectDocument(input: { id: string; document: Omit<Pro
   });
   return project;
 }
+
+export async function assignProjectPartner(input: { id: string; partnerId: string | null }): Promise<Project> {
+  const { project } = await apiRequest<{ project: Project }>(`/projects/${input.id}/assign-partner`, {
+    method: "PATCH",
+    body: JSON.stringify({ partnerId: input.partnerId }),
+  });
+  return project;
+}

@@ -64,6 +64,9 @@ export interface Lead {
   priority: LeadPriority;
   assignedEmployeeId: string | null;
   lostReason?: LostReason;
+  /** Set when this lead was submitted by a Partner, linking it to their Partner profile. */
+  partnerId: string | null;
+  partnerNote?: { requirement?: string; preferredContactTime?: string; remarks?: string };
   createdAt: string;
   updatedAt: string;
 }

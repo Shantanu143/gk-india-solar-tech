@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { leadController } from "../controller/lead.controller";
 import { activityController } from "../controller/activity.controller";
+import { customerInquiryController } from "../controller/customerInquiry.controller";
 import { authenticate } from "../middleware/authenticate";
-import { authorizePermission } from "../middleware/authorize";
+import { authorizePermission, authorizeRoles } from "../middleware/authorize";
 import { validateBody } from "../middleware/validateRequest";
 import { addRemarkSchema, assignLeadSchema, createLeadSchema, updateLeadStatusSchema } from "../validation/lead.validation";
 
@@ -12,6 +13,9 @@ const router = Router();
 router.post("/", validateBody(createLeadSchema), leadController.create);
 
 router.use(authenticate);
+
+// Must come before the "/:id" wildcard below, or "/me" would be parsed as an id.
+router.get("/me", authorizeRoles("CUSTOMER"), customerInquiryController.getMine);
 
 router.get("/", authorizePermission("leads.view"), leadController.list);
 router.get("/:id", authorizePermission("leads.view"), leadController.get);

@@ -27,7 +27,11 @@ function istNowTime(): string {
 function buildScopeQuery(scope: FollowUpScope | undefined): Record<string, unknown> {
   if (!scope) return {};
   const today = istToday();
-  if (scope === "today") return { status: "PENDING", date: today };
+  // "today" and "overdue" must partition pending same-day follow-ups, never overlap — a today-dated
+  // follow-up whose time has already passed belongs to "overdue" only, not both (it used to match
+  // both scopes at once once its time passed, double-counting it in dashboards and in the combined
+  // "Today's Priorities" list, which also surfaced as a React duplicate-key warning).
+  if (scope === "today") return { status: "PENDING", date: today, time: { $gte: istNowTime() } };
   if (scope === "overdue") {
     return { status: "PENDING", $or: [{ date: { $lt: today } }, { date: today, time: { $lt: istNowTime() } }] };
   }

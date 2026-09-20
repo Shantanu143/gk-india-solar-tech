@@ -28,9 +28,13 @@ export type Permission =
   | "reports.view"
   | "employees.view"
   | "employees.manage"
-  | "settings.manage";
+  | "settings.manage"
+  | "partners.view"
+  | "partners.manage"
+  | "commissions.view"
+  | "commissions.manage";
 
-type EmployeeRole = Exclude<UserRole, "CUSTOMER">;
+type EmployeeRole = Exclude<UserRole, "CUSTOMER" | "PARTNER">;
 
 const ROLE_PERMISSIONS: Record<EmployeeRole, Permission[]> = {
   ADMIN: [
@@ -57,6 +61,10 @@ const ROLE_PERMISSIONS: Record<EmployeeRole, Permission[]> = {
     "employees.view",
     "employees.manage",
     "settings.manage",
+    "partners.view",
+    "partners.manage",
+    "commissions.view",
+    "commissions.manage",
   ],
   SALES_MANAGER: [
     "leads.view",
@@ -75,6 +83,8 @@ const ROLE_PERMISSIONS: Record<EmployeeRole, Permission[]> = {
     "materials.view",
     "reports.view",
     "employees.view",
+    "partners.view",
+    "commissions.view",
   ],
   SALES_EXECUTIVE: [
     "leads.view",
@@ -95,8 +105,8 @@ const ROLE_PERMISSIONS: Record<EmployeeRole, Permission[]> = {
   SURVEY_ENGINEER: ["leads.view", "surveys.view", "surveys.create", "followups.view", "employees.view"],
 };
 
-/** CUSTOMER always falls through to `false` — customers act through their own portal endpoints, never these permissions. */
+/** CUSTOMER and PARTNER always fall through to `false` — both act through their own dedicated, self-scoped portal endpoints, never this employee RBAC map. */
 export function can(role: UserRole, permission: Permission): boolean {
-  if (role === "CUSTOMER") return false;
+  if (role === "CUSTOMER" || role === "PARTNER") return false;
   return ROLE_PERMISSIONS[role]?.includes(permission) ?? false;
 }

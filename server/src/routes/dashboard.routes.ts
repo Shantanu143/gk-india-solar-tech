@@ -12,6 +12,8 @@ router.get("/funnel", dashboardController.funnel);
 router.get("/sources", dashboardController.sources);
 router.get("/project-types", dashboardController.projectTypes);
 router.get("/employee-performance", dashboardController.employeePerformance);
+router.get("/partner-performance", dashboardController.partnerPerformance);
+router.get("/daily-sales-activity", dashboardController.dailySalesActivity);
 router.get("/trend", dashboardController.trend);
 router.get("/overdue-follow-ups", dashboardController.overdueFollowUps);
 

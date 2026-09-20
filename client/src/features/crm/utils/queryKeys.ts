@@ -67,4 +67,21 @@ export const queryKeys = {
   materialsList: (params: GetMaterialsParams) => ["materials", "list", params] as const,
   materialDetail: (id: string) => ["materials", "detail", id] as const,
   materialTransactions: (id: string) => ["materials", "transactions", id] as const,
+
+  partners: ["partners"] as const,
+  partnerDetail: (id: string) => ["partners", "detail", id] as const,
+  partnerMe: ["partners", "me"] as const,
+  partnerDashboard: ["partners", "dashboard"] as const,
+  partnerLeads: ["partners", "leads"] as const,
+  partnerLeadDetail: (id: string) => ["partners", "leads", "detail", id] as const,
+  partnerProjects: ["partners", "projects"] as const,
+
+  commissionRules: ["commissionRules"] as const,
+  commissions: ["commissions"] as const,
+  commissionsMe: ["commissions", "me"] as const,
+
+  dashboardPartnerPerformance: ["dashboard", "partnerPerformance"] as const,
+  dashboardDailySalesActivity: (date: string) => ["dashboard", "dailySalesActivity", date] as const,
+
+  myInquiries: ["myInquiries"] as const,
 };

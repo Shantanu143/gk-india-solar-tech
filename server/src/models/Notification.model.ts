@@ -1,6 +1,19 @@
 import { Schema, model, Types, type HydratedDocument, type Model } from "mongoose";
 
-export const NOTIFICATION_TYPES = ["LEAD_ASSIGNED", "FOLLOW_UP_DUE", "FOLLOW_UP_OVERDUE", "SURVEY_SCHEDULED", "QUOTATION_READY"] as const;
+export const NOTIFICATION_TYPES = [
+  "LEAD_ASSIGNED",
+  "FOLLOW_UP_DUE",
+  "FOLLOW_UP_OVERDUE",
+  "SURVEY_SCHEDULED",
+  "QUOTATION_READY",
+  "PARTNER_APPLICATION_SUBMITTED",
+  "PARTNER_APPROVED",
+  "PARTNER_REJECTED",
+  "PARTNER_LEAD_SUBMITTED",
+  "LEAD_STATUS_UPDATED",
+  "COMMISSION_STATUS_UPDATED",
+  "PARTNER_PROJECT_ASSIGNED",
+] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 export interface NotificationAttrs {

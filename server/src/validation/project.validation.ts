@@ -12,6 +12,11 @@ export const updateProjectStatusSchema = z.object({
 });
 export type UpdateProjectStatusInput = z.infer<typeof updateProjectStatusSchema>;
 
+export const assignProjectPartnerSchema = z.object({
+  partnerId: z.string().min(1).nullable(),
+});
+export type AssignProjectPartnerInput = z.infer<typeof assignProjectPartnerSchema>;
+
 export const addProjectDocumentSchema = z.object({
   id: z.string().min(1),
   fileName: z.string().min(1),

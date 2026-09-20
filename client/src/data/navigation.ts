@@ -35,6 +35,7 @@ export const mainNavLinks: MainNavEntry[] = [
     ],
   },
   link("Services", ROUTES.services),
+  link("Partners", ROUTES.becomePartner),
   link("About", ROUTES.about),
   link("Contact", ROUTES.contact),
 ];
@@ -75,6 +76,7 @@ export const footerLinkGroups: FooterLinkGroup[] = [
     links: [
       { label: "FAQ", href: ROUTES.faq },
       { label: "Free Solar Estimate", href: ROUTES.solarEstimate },
+      { label: "Become a Partner", href: ROUTES.becomePartner },
     ],
   },
 ];

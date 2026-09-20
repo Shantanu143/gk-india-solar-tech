@@ -5,9 +5,11 @@ import {
   ClipboardList,
   FileText,
   FolderKanban,
+  Handshake,
   LayoutDashboard,
   Megaphone,
   Package,
+  Percent,
   Settings,
   UserCircle,
   Users,
@@ -65,6 +67,8 @@ export const ADMIN_NAV_ITEMS: CrmNavEntry[] = [
     ],
   },
   link("Employees", CRM_ROUTES.adminEmployees, Users2),
+  link("Partners", CRM_ROUTES.adminPartners, Handshake),
+  link("Commissions", CRM_ROUTES.adminCommissions, Percent),
   link("Reports", CRM_ROUTES.adminReports, BarChart3),
   link("Settings", CRM_ROUTES.adminSettings, Settings),
 ];
@@ -77,4 +81,12 @@ export const EMPLOYEE_NAV_ITEMS: CrmNavEntry[] = [
   link("Quotations", CRM_ROUTES.employeeQuotations, FileText),
   link("Projects", CRM_ROUTES.employeeProjects, FolderKanban),
   link("Settings", CRM_ROUTES.employeeSettings, Settings),
+];
+
+export const PARTNER_NAV_ITEMS: CrmNavEntry[] = [
+  link("Dashboard", CRM_ROUTES.partnerDashboard, LayoutDashboard),
+  link("My Leads", CRM_ROUTES.partnerLeads, Users, "leads"),
+  link("My Projects", CRM_ROUTES.partnerProjects, FolderKanban),
+  link("Commissions", CRM_ROUTES.partnerCommissions, Percent),
+  link("Profile", CRM_ROUTES.partnerProfile, UserCircle),
 ];

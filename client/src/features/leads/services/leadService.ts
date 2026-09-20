@@ -35,8 +35,10 @@ export interface AssignLeadPayload {
 }
 
 export async function assignLead(payload: AssignLeadPayload): Promise<Lead> {
+  // The server registers this route as POST (`router.post("/:id/assign", ...)` in lead.routes.ts) —
+  // PATCH here 404s, which surfaced in the UI as a generic "Couldn't assign this lead" error.
   const { lead } = await apiRequest<{ lead: Lead }>(`/leads/${payload.leadId}/assign`, {
-    method: "PATCH",
+    method: "POST",
     body: JSON.stringify({ employeeId: payload.employeeId, priority: payload.priority }),
   });
   return lead;

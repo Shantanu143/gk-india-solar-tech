@@ -11,6 +11,9 @@ import notificationRoutes from "./notification.routes";
 import customerRoutes from "./customer.routes";
 import projectRoutes from "./project.routes";
 import materialRoutes from "./material.routes";
+import partnerRoutes from "./partner.routes";
+import partnerLeadRoutes from "./partnerLead.routes";
+import commissionRoutes from "./commission.routes";
 
 const router = Router();
 
@@ -26,5 +29,8 @@ router.use("/notifications", notificationRoutes);
 router.use("/customers", customerRoutes);
 router.use("/projects", projectRoutes);
 router.use("/materials", materialRoutes);
+router.use("/partners", partnerRoutes);
+router.use("/partners", partnerLeadRoutes);
+router.use("/commissions", commissionRoutes);
 
 export default router;

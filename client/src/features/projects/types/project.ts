@@ -28,6 +28,8 @@ export interface Project {
   status: ProjectStatus;
   systemCapacityKw: number;
   assignedEmployeeId: string | null;
+  /** Set when an Installation/Service or EPC partner is executing this project instead of an internal employee. */
+  assignedPartnerId: string | null;
   documents: ProjectDocumentFile[];
   completedAt?: string;
   createdAt: string;

@@ -55,6 +55,18 @@ export const AdminReportsPage = lazy(() =>
 export const AdminSettingsPage = lazy(() =>
   import("@/pages/admin/Settings/AdminSettingsPage").then((m) => ({ default: m.AdminSettingsPage })),
 );
+export const AdminPartnersPage = lazy(() =>
+  import("@/pages/admin/Partners/AdminPartnersPage").then((m) => ({ default: m.AdminPartnersPage })),
+);
+export const AdminAddPartnerPage = lazy(() =>
+  import("@/pages/admin/Partners/AdminAddPartnerPage").then((m) => ({ default: m.AdminAddPartnerPage })),
+);
+export const AdminPartnerDetailPage = lazy(() =>
+  import("@/pages/admin/Partners/AdminPartnerDetailPage").then((m) => ({ default: m.AdminPartnerDetailPage })),
+);
+export const AdminCommissionsPage = lazy(() =>
+  import("@/pages/admin/Commissions/AdminCommissionsPage").then((m) => ({ default: m.AdminCommissionsPage })),
+);
 
 // Employee
 export const EmployeeDashboardPage = lazy(() =>

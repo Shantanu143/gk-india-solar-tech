@@ -60,6 +60,13 @@ export interface LeadLocation {
   address: string;
 }
 
+/** Captured only when a Partner submits a lead through their dashboard (spec's "Submit New Lead" form). */
+export interface PartnerLeadNote {
+  requirement?: string;
+  preferredContactTime?: string;
+  remarks?: string;
+}
+
 export interface SolarRecommendation {
   recommendedCapacity: number;
   estimatedPanels: number;
@@ -81,6 +88,9 @@ export interface LeadAttrs {
   priority: LeadPriority;
   assignedEmployeeId: Types.ObjectId | null;
   lostReason?: LostReason;
+  /** Set when this lead was submitted by a Partner (source "REFERRAL") — links it back to their Partner profile for lead tracking and commission calculation. */
+  partnerId: Types.ObjectId | null;
+  partnerNote?: PartnerLeadNote;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -117,6 +127,15 @@ const solarRecommendationSchema = new Schema<SolarRecommendation>(
   { _id: false },
 );
 
+const partnerLeadNoteSchema = new Schema<PartnerLeadNote>(
+  {
+    requirement: { type: String, trim: true },
+    preferredContactTime: { type: String, trim: true },
+    remarks: { type: String, trim: true },
+  },
+  { _id: false },
+);
+
 const leadSchema = new Schema<LeadAttrs>(
   {
     leadId: { type: String, required: true, unique: true },
@@ -132,11 +151,14 @@ const leadSchema = new Schema<LeadAttrs>(
     priority: { type: String, enum: LEAD_PRIORITIES, required: true, default: "MEDIUM" },
     assignedEmployeeId: { type: Schema.Types.ObjectId, ref: "User", default: null },
     lostReason: { type: String, enum: LOST_REASONS },
+    partnerId: { type: Schema.Types.ObjectId, ref: "Partner", default: null },
+    partnerNote: { type: partnerLeadNoteSchema, default: undefined },
   },
   { timestamps: true },
 );
 
 leadSchema.index({ status: 1 });
 leadSchema.index({ assignedEmployeeId: 1 });
+leadSchema.index({ partnerId: 1 });
 
 export const LeadModel: Model<LeadAttrs> = model<LeadAttrs>("Lead", leadSchema);

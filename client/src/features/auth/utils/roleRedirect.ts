@@ -11,6 +11,8 @@ export function dashboardPathForRole(role: UserRole): string {
     case "SALES_EXECUTIVE":
     case "SURVEY_ENGINEER":
       return CRM_ROUTES.employeeDashboard;
+    case "PARTNER":
+      return CRM_ROUTES.partnerDashboard;
     case "CUSTOMER":
       return ROUTES.home;
   }

@@ -16,6 +16,8 @@ export function toPublicLead(lead: LeadDocument) {
     priority: lead.priority,
     assignedEmployeeId: lead.assignedEmployeeId ? lead.assignedEmployeeId.toString() : null,
     lostReason: lead.lostReason,
+    partnerId: lead.partnerId ? lead.partnerId.toString() : null,
+    partnerNote: lead.partnerNote,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   };

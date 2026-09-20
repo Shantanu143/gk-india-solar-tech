@@ -29,4 +29,16 @@ export const CRM_ROUTES = {
   employeeProjects: "/employee/projects",
   employeeProjectDetail: (id: string) => `/employee/projects/${id}`,
   employeeSettings: "/employee/settings",
+
+  partnerDashboard: "/partner/dashboard",
+  partnerLeads: "/partner/leads",
+  partnerLeadDetail: (id: string) => `/partner/leads/${id}`,
+  partnerProjects: "/partner/projects",
+  partnerCommissions: "/partner/commissions",
+  partnerProfile: "/partner/profile",
+
+  adminPartners: "/admin/partners",
+  adminPartnerNew: "/admin/partners/new",
+  adminPartnerDetail: (id: string) => `/admin/partners/${id}`,
+  adminCommissions: "/admin/commissions",
 } as const;

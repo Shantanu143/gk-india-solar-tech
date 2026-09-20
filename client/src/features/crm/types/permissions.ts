@@ -17,7 +17,11 @@ export type Permission =
   | "reports.view"
   | "employees.view"
   | "employees.manage"
-  | "settings.manage";
+  | "settings.manage"
+  | "partners.view"
+  | "partners.manage"
+  | "commissions.view"
+  | "commissions.manage";
 
 /**
  * Frontend permission map for UX only — hiding a button here is not security. The backend will
@@ -41,6 +45,10 @@ const ROLE_PERMISSIONS: Record<EmployeeRole, Permission[]> = {
     "employees.view",
     "employees.manage",
     "settings.manage",
+    "partners.view",
+    "partners.manage",
+    "commissions.view",
+    "commissions.manage",
   ],
   SALES_MANAGER: [
     "leads.view",
@@ -54,6 +62,8 @@ const ROLE_PERMISSIONS: Record<EmployeeRole, Permission[]> = {
     "quotations.view",
     "reports.view",
     "employees.view",
+    "partners.view",
+    "commissions.view",
   ],
   SALES_EXECUTIVE: [
     "leads.view",
@@ -70,13 +80,13 @@ const ROLE_PERMISSIONS: Record<EmployeeRole, Permission[]> = {
   SURVEY_ENGINEER: ["leads.view", "surveys.view", "surveys.create", "followups.view", "employees.view"],
 };
 
-/** CUSTOMER always falls through to `false` — customers never see CRM UI. */
+/** CUSTOMER and PARTNER always fall through to `false`/`[]` — neither sees the employee CRM UI (Partner has its own portal). */
 export function can(role: UserRole, permission: Permission): boolean {
-  if (role === "CUSTOMER") return false;
+  if (role === "CUSTOMER" || role === "PARTNER") return false;
   return ROLE_PERMISSIONS[role]?.includes(permission) ?? false;
 }
 
 export function getPermissions(role: UserRole): Permission[] {
-  if (role === "CUSTOMER") return [];
+  if (role === "CUSTOMER" || role === "PARTNER") return [];
   return ROLE_PERMISSIONS[role] ?? [];
 }

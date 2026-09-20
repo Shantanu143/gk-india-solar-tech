@@ -10,6 +10,7 @@ export function toPublicProject(project: ProjectDocument) {
     status: project.status,
     systemCapacityKw: project.systemCapacityKw,
     assignedEmployeeId: project.assignedEmployeeId ? project.assignedEmployeeId.toString() : null,
+    assignedPartnerId: project.assignedPartnerId ? project.assignedPartnerId.toString() : null,
     documents: project.documents,
     completedAt: project.completedAt ? project.completedAt.toISOString() : undefined,
     createdAt: project.createdAt.toISOString(),

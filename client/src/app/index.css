@@ -66,6 +66,27 @@
   }
 }
 
+/*
+ * Role-based CRM theming — each portal (Admin, Employee, Partner) gets its own accent color.
+ * These remap the exact same `--color-orange*` variables every component already renders through
+ * (buttons, active nav state, badges, the ambient background glow) — no component changes needed.
+ * Scoped to a class applied at each portal's layout root (`CRMLayout`), so the public marketing
+ * site — which uses the default orange heavily — is completely unaffected. Admin needs no override;
+ * it keeps the default brand orange declared in `@theme` above.
+ */
+.theme-employee {
+  --color-orange: #0284c7;
+  --color-orange-dark: #075985;
+  --color-orange-light: #38bdf8;
+  --shadow-glow-orange: 0 0 0 1px rgba(2, 132, 199, 0.15), 0 12px 32px -8px rgba(2, 132, 199, 0.35);
+}
+.theme-partner {
+  --color-orange: #7c3aed;
+  --color-orange-dark: #6d28d9;
+  --color-orange-light: #a78bfa;
+  --shadow-glow-orange: 0 0 0 1px rgba(124, 58, 237, 0.15), 0 12px 32px -8px rgba(124, 58, 237, 0.35);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);

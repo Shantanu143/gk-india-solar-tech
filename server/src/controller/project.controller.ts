@@ -32,4 +32,9 @@ export const projectController = {
     const project = await projectService.addDocument({ id: req.params.id, document: req.body });
     res.status(201).json({ project });
   }),
+
+  assignPartner: asyncHandler(async (req, res) => {
+    const project = await projectService.assignToPartner({ id: req.params.id, partnerId: req.body.partnerId, actorName: req.user!.name });
+    res.json({ project });
+  }),
 };

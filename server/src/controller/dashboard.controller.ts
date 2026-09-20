@@ -27,6 +27,17 @@ export const dashboardController = {
     res.json(rows);
   }),
 
+  partnerPerformance: asyncHandler(async (_req, res) => {
+    const rows = await dashboardService.getPartnerPerformance();
+    res.json(rows);
+  }),
+
+  dailySalesActivity: asyncHandler(async (req, res) => {
+    const date = typeof req.query.date === "string" && req.query.date ? req.query.date : new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+    const rows = await dashboardService.getDailySalesActivity(date);
+    res.json({ date, rows });
+  }),
+
   trend: asyncHandler(async (req, res) => {
     const days = Number(req.query.days) || 30;
     const trend = await dashboardService.getLeadTrend(days);

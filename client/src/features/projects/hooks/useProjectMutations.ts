@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/features/crm/utils/queryKeys";
-import { addProjectDocument, updateProjectStatus } from "@/features/projects/services/projectService";
+import { addProjectDocument, assignProjectPartner, updateProjectStatus } from "@/features/projects/services/projectService";
 
 export function useUpdateProjectStatus() {
   const queryClient = useQueryClient();
@@ -19,6 +19,17 @@ export function useAddProjectDocument() {
   return useMutation({
     mutationFn: addProjectDocument,
     onSuccess: (project) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projectDetail(project.id) });
+    },
+  });
+}
+
+export function useAssignProjectPartner() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: assignProjectPartner,
+    onSuccess: (project) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects });
       queryClient.invalidateQueries({ queryKey: queryKeys.projectDetail(project.id) });
     },
   });

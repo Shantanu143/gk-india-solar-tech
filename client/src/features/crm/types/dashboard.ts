@@ -45,3 +45,26 @@ export interface LeadTrendPoint {
   date: string;
   count: number;
 }
+
+/**
+ * A single employee's activity on one IST calendar day, derived from existing timestamped records
+ * (the Activity log, plus FollowUp/Survey/Quotation completion timestamps) — there's no call-log or
+ * manual daily-report entry in this app, so call-connect-rate style metrics aren't tracked.
+ */
+export interface DailySalesActivityRow {
+  employeeId: string;
+  employeeName: string;
+  role: string;
+  statusChanges: number;
+  remarksLogged: number;
+  followUpsCompleted: number;
+  surveysCompleted: number;
+  quotationsSent: number;
+  bookings: number;
+  leadsLost: number;
+}
+
+export interface DailySalesActivityReport {
+  date: string;
+  rows: DailySalesActivityRow[];
+}

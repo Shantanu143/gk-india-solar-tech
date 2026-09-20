@@ -1,10 +1,13 @@
 import { Schema, model, type HydratedDocument, type Model } from "mongoose";
 
-export const USER_ROLES = ["ADMIN", "SALES_MANAGER", "SALES_EXECUTIVE", "SURVEY_ENGINEER", "CUSTOMER"] as const;
+export const USER_ROLES = ["ADMIN", "SALES_MANAGER", "SALES_EXECUTIVE", "SURVEY_ENGINEER", "CUSTOMER", "PARTNER"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
-export const EMPLOYEE_ROLES = USER_ROLES.filter((role) => role !== "CUSTOMER") as Exclude<UserRole, "CUSTOMER">[];
-export type EmployeeRole = Exclude<UserRole, "CUSTOMER">;
+export const EMPLOYEE_ROLES = USER_ROLES.filter((role) => role !== "CUSTOMER" && role !== "PARTNER") as Exclude<
+  UserRole,
+  "CUSTOMER" | "PARTNER"
+>[];
+export type EmployeeRole = Exclude<UserRole, "CUSTOMER" | "PARTNER">;
 
 export const USER_STATUSES = ["ACTIVE", "INACTIVE"] as const;
 export type UserStatus = (typeof USER_STATUSES)[number];

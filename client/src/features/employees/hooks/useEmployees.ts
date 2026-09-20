@@ -2,8 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/features/crm/utils/queryKeys";
 import { getEmployee, getEmployees } from "@/features/employees/services/employeeService";
 
-export function useEmployees() {
-  return useQuery({ queryKey: queryKeys.employees, queryFn: getEmployees });
+export function useEmployees(options?: { enabled?: boolean }) {
+  return useQuery({ queryKey: queryKeys.employees, queryFn: getEmployees, enabled: options?.enabled ?? true });
 }
 
 export function useEmployee(id: string | undefined) {

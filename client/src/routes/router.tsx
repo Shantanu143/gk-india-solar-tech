@@ -5,10 +5,12 @@ import { CRM_ROUTES } from "@/features/crm/utils/routes";
 import { ProtectedRoute } from "@/features/crm/components/ProtectedRoute";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { EmployeeLayout } from "@/layouts/EmployeeLayout";
+import { PartnerLayout } from "@/layouts/PartnerLayout";
 import { Home } from "@/pages/Home/Home";
 import {
   AccountPage,
   About,
+  BecomePartnerPage,
   Commercial,
   Contact,
   FAQ,
@@ -16,6 +18,8 @@ import {
   LoginPage,
   NetMetering,
   NotFound,
+  PartnerApplyPage,
+  PartnerApplySuccessPage,
   PrivacyPolicy,
   Products,
   RefundPolicy,
@@ -28,6 +32,8 @@ import {
   Terms,
 } from "./lazyPages";
 import {
+  AdminAddPartnerPage,
+  AdminCommissionsPage,
   AdminCustomerDetailPage,
   AdminCustomersPage,
   AdminDashboardPage,
@@ -37,6 +43,8 @@ import {
   AdminLeadsPage,
   AdminMarketingLeadsPage,
   AdminMaterialsPage,
+  AdminPartnerDetailPage,
+  AdminPartnersPage,
   AdminProductsPage,
   AdminProjectDetailPage,
   AdminProjectsPage,
@@ -58,6 +66,14 @@ import {
   EmployeeSurveysPage,
   SurveyDetailPage,
 } from "./crmLazyPages";
+import {
+  PartnerCommissionsPage,
+  PartnerDashboardPage,
+  PartnerLeadDetailPage,
+  PartnerLeadsPage,
+  PartnerProfilePage,
+  PartnerProjectsPage,
+} from "./partnerLazyPages";
 
 export const router = createBrowserRouter([
   {
@@ -76,6 +92,9 @@ export const router = createBrowserRouter([
       { path: ROUTES.subsidy, element: <Subsidy /> },
       { path: ROUTES.contact, element: <Contact /> },
       { path: ROUTES.faq, element: <FAQ /> },
+      { path: ROUTES.becomePartner, element: <BecomePartnerPage /> },
+      { path: ROUTES.partnerApply, element: <PartnerApplyPage /> },
+      { path: ROUTES.partnerApplySuccess, element: <PartnerApplySuccessPage /> },
       { path: ROUTES.privacyPolicy, element: <PrivacyPolicy /> },
       { path: ROUTES.terms, element: <Terms /> },
       { path: ROUTES.refundPolicy, element: <RefundPolicy /> },
@@ -113,6 +132,10 @@ export const router = createBrowserRouter([
       { path: CRM_ROUTES.adminMaterials, element: <AdminMaterialsPage /> },
       { path: CRM_ROUTES.adminProducts, element: <AdminProductsPage /> },
       { path: CRM_ROUTES.adminMarketingLeads, element: <AdminMarketingLeadsPage /> },
+      { path: CRM_ROUTES.adminPartners, element: <AdminPartnersPage /> },
+      { path: CRM_ROUTES.adminPartnerNew, element: <AdminAddPartnerPage /> },
+      { path: CRM_ROUTES.adminPartnerDetail(":partnerId"), element: <AdminPartnerDetailPage /> },
+      { path: CRM_ROUTES.adminCommissions, element: <AdminCommissionsPage /> },
       { path: CRM_ROUTES.adminReports, element: <AdminReportsPage /> },
       { path: CRM_ROUTES.adminSettings, element: <AdminSettingsPage /> },
     ],
@@ -131,6 +154,17 @@ export const router = createBrowserRouter([
       { path: CRM_ROUTES.employeeProjects, element: <EmployeeProjectsPage /> },
       { path: CRM_ROUTES.employeeProjectDetail(":projectId"), element: <EmployeeProjectDetailPage /> },
       { path: CRM_ROUTES.employeeSettings, element: <EmployeeSettingsPage /> },
+    ],
+  },
+  {
+    element: <PartnerLayout />,
+    children: [
+      { path: CRM_ROUTES.partnerDashboard, element: <PartnerDashboardPage /> },
+      { path: CRM_ROUTES.partnerLeads, element: <PartnerLeadsPage /> },
+      { path: CRM_ROUTES.partnerLeadDetail(":leadId"), element: <PartnerLeadDetailPage /> },
+      { path: CRM_ROUTES.partnerProjects, element: <PartnerProjectsPage /> },
+      { path: CRM_ROUTES.partnerCommissions, element: <PartnerCommissionsPage /> },
+      { path: CRM_ROUTES.partnerProfile, element: <PartnerProfilePage /> },
     ],
   },
 ]);

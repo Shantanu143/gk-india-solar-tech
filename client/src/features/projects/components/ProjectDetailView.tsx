@@ -8,12 +8,64 @@ import { SkeletonRows } from "@/features/crm/components/LoadingSkeleton";
 import { PageHeader } from "@/features/crm/components/PageHeader";
 import { useCustomer } from "@/features/customers/hooks/useCustomers";
 import { useProject } from "@/features/projects/hooks/useProjects";
-import { useAddProjectDocument, useUpdateProjectStatus } from "@/features/projects/hooks/useProjectMutations";
+import { useAddProjectDocument, useAssignProjectPartner, useUpdateProjectStatus } from "@/features/projects/hooks/useProjectMutations";
 import { ProjectStatusBadge } from "@/features/projects/components/ProjectStatusBadge";
 import { PROJECT_STATUS_LABEL, PROJECT_STATUSES } from "@/features/projects/types/project";
 import { getAllowedNextProjectStatuses, isTerminalProjectStatus, projectStatusIndex } from "@/features/projects/utils/projectWorkflow";
+import { useAdminPartners } from "@/features/partners/hooks/useAdminPartners";
+import { PARTNER_TYPE_LABEL } from "@/features/partners/types/partner";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
+
+function AssignPartnerPanel({ projectId, assignedPartnerId }: { projectId: string; assignedPartnerId: string | null }) {
+  const { data: partnersPage } = useAdminPartners({ status: "APPROVED", pageSize: 200 });
+  const assignPartner = useAssignProjectPartner();
+  const [selected, setSelected] = useState(assignedPartnerId ?? "");
+
+  // Only Installation/Service and EPC partners execute projects — a Sales/Referral partner never does.
+  const eligiblePartners = (partnersPage?.items ?? []).filter((p) => p.type !== "SALES_REFERRAL");
+  const currentPartner = eligiblePartners.find((p) => p.id === assignedPartnerId);
+
+  return (
+    <GlassPanel className="p-5">
+      <h2 className="text-base font-bold text-navy">Execution Partner</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Assign this project to an Installation/Service or EPC partner to execute it, instead of (or alongside) your internal team.
+      </p>
+
+      {assignedPartnerId && (
+        <p className="mt-3 text-sm text-foreground/80">
+          Currently assigned to <span className="font-semibold text-navy">{currentPartner?.name ?? "a partner"}</span>
+          {currentPartner && ` (${PARTNER_TYPE_LABEL[currentPartner.type]})`}.
+        </p>
+      )}
+
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <select
+          value={selected}
+          onChange={(e) => setSelected(e.target.value)}
+          className="h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm focus:border-orange sm:max-w-xs"
+        >
+          <option value="">Unassigned</option>
+          {eligiblePartners.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name} — {PARTNER_TYPE_LABEL[p.type]}
+            </option>
+          ))}
+        </select>
+        <Button
+          type="button"
+          size="sm"
+          disabled={assignPartner.isPending || selected === (assignedPartnerId ?? "")}
+          onClick={() => assignPartner.mutate({ id: projectId, partnerId: selected || null })}
+        >
+          {assignPartner.isPending ? "Saving…" : "Save Assignment"}
+        </Button>
+      </div>
+      {assignPartner.isError && <p className="mt-2 text-sm text-error">Couldn't update the assignment. Please try again.</p>}
+    </GlassPanel>
+  );
+}
 
 interface ProjectDetailViewProps {
   projectId: string;
@@ -112,6 +164,8 @@ export function ProjectDetailView({ projectId, leadDetailPath, canManage }: Proj
         </ol>
         {updateStatus.isError && <p className="mt-2 text-sm text-error">Couldn't update the project status. Please try again.</p>}
       </GlassPanel>
+
+      {canManage && <AssignPartnerPanel projectId={project.id} assignedPartnerId={project.assignedPartnerId} />}
 
       <GlassPanel className="p-5">
         <h2 className="text-base font-bold text-navy">Documents</h2>
