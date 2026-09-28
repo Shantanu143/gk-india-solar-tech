@@ -1,20 +1,21 @@
-import { mockDelay } from "./apiClient";
-import { generateMockLeadResponse } from "@/mocks/mockLeadResponse";
+import { apiRequest, mockDelay } from "./apiClient";
 import type { ContactInquiryPayload } from "@/types/lead";
 import type { CreateLeadRequest, LeadResponse } from "@/types/leadCapture";
 
 /**
- * TODO(Feature 4 — Lead Capture): replace with `apiRequest("/leads", { method: "POST", body: ... })`
- * once the CRM lead-intake endpoint exists. The contact form already matches this signature,
- * so swapping the implementation will not require UI changes.
+ * TODO(Feature 4 — Lead Capture): there is no general-inquiry intake endpoint yet — `/api/leads`
+ * requires solar-estimate-specific fields (projectType, location, monthlyBill, solarRecommendation)
+ * this form never collects, so it can't just be pointed at that endpoint as-is.
  */
 export async function submitContactInquiry(payload: ContactInquiryPayload): Promise<{ success: true }> {
   void payload;
   return mockDelay({ success: true }, 900);
 }
 
-/** TODO(backend): replace with `apiRequest<LeadResponse>("/leads", { method: "POST", body: JSON.stringify(request) })`. */
 export async function submitLead(request: CreateLeadRequest): Promise<LeadResponse> {
-  void request;
-  return mockDelay(generateMockLeadResponse(), 1100);
+  const response = await apiRequest<{ lead: { leadId: string } }>("/leads", {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+  return { leadId: response.lead.leadId, status: "NEW" };
 }

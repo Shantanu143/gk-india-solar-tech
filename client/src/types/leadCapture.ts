@@ -9,7 +9,10 @@ export interface LeadDetails {
   address: string;
 }
 
-/** Frontend request shape for the future `POST /api/leads`. */
+/** Mirrors `server/src/models/Lead.model.ts` — keep both in sync. */
+export type LeadSource = "GOOGLE_ADS" | "FACEBOOK" | "INSTAGRAM" | "YOUTUBE" | "ORGANIC_SEARCH" | "DIRECT" | "REFERRAL" | "OTHER";
+
+/** Request shape for `POST /api/leads` — mirrors `server/src/validation/lead.validation.ts`'s `createLeadSchema`. */
 export interface CreateLeadRequest {
   customer: {
     fullName: string;
@@ -18,23 +21,20 @@ export interface CreateLeadRequest {
     email?: string;
     address: string;
   };
-  project: {
-    projectType: ProjectType;
-    city: string;
+  projectType: ProjectType;
+  location: {
     pincode: string;
-    monthlyBill: number;
+    city: string;
+    address: string;
   };
+  monthlyBill: number;
   solarRecommendation: {
     recommendedCapacity: number;
     estimatedPanels: number;
     panelCapacity: number;
     recommendedInverter: number;
   };
-  source: {
-    utmSource?: string;
-    utmMedium?: string;
-    utmCampaign?: string;
-  };
+  source: LeadSource;
 }
 
 export interface LeadResponse {

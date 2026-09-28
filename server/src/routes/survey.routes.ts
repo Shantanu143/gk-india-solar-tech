@@ -13,10 +13,15 @@ router.get("/", surveyController.list);
 router.get("/for-lead/:leadId", surveyController.getForLead);
 router.get("/:id", surveyController.get);
 router.post("/", authorizePermission("surveys.create"), validateBody(scheduleSurveySchema), surveyController.schedule);
-router.post("/:id/start", surveyController.start);
-router.patch("/:id/progress", validateBody(saveSurveyProgressSchema), surveyController.saveProgress);
-router.post("/:id/complete", validateBody(saveSurveyProgressSchema), surveyController.complete);
+router.post("/:id/start", authorizePermission("surveys.create"), surveyController.start);
+router.patch("/:id/progress", authorizePermission("surveys.create"), validateBody(saveSurveyProgressSchema), surveyController.saveProgress);
+router.post("/:id/complete", authorizePermission("surveys.create"), validateBody(saveSurveyProgressSchema), surveyController.complete);
 router.get("/:id/final-configuration", surveyController.getFinalConfiguration);
-router.post("/:id/final-configuration", validateBody(prepareFinalConfigurationSchema), surveyController.prepareFinalConfiguration);
+router.post(
+  "/:id/final-configuration",
+  authorizePermission("surveys.create"),
+  validateBody(prepareFinalConfigurationSchema),
+  surveyController.prepareFinalConfiguration,
+);
 
 export default router;

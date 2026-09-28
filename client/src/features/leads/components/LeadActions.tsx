@@ -88,7 +88,7 @@ export function LeadActions({ lead, onAssign, onAddFollowUp, onScheduleSurvey }:
         </Button>
       )}
 
-      {canGenerateQuotation && (
+      {canGenerateQuotation && can("quotations.create") && (
         <Button
           variant={primary === "quotation" ? "primary" : "secondary"}
           size="sm"

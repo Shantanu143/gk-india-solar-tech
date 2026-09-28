@@ -17,8 +17,22 @@ import { calculateEmi } from "@/services/solarCalculationService";
 import { submitLead } from "@/services/leadService";
 import { ROUTES } from "@/constant/routes";
 import type { LeadFormValues } from "@/schemas/lead.schema";
-import type { CreateLeadRequest } from "@/types/leadCapture";
+import type { CreateLeadRequest, LeadSource } from "@/types/leadCapture";
 import type { LocationData, ProjectType, SolarCalculationResult } from "@/types/solarEstimate";
+
+/** Best-effort mapping from campaign UTM tags to the CRM's fixed `LeadSource` enum. */
+function resolveLeadSource(searchParams: URLSearchParams): LeadSource {
+  const utmSource = (searchParams.get("utm_source") ?? "").toLowerCase();
+  const utmMedium = (searchParams.get("utm_medium") ?? "").toLowerCase();
+
+  if (!utmSource) return "DIRECT";
+  if (utmSource.includes("google")) return utmMedium === "organic" ? "ORGANIC_SEARCH" : "GOOGLE_ADS";
+  if (utmSource.includes("facebook") || utmSource.includes("fb")) return "FACEBOOK";
+  if (utmSource.includes("instagram") || utmSource.includes("ig")) return "INSTAGRAM";
+  if (utmSource.includes("youtube")) return "YOUTUBE";
+  if (utmSource.includes("referral")) return "REFERRAL";
+  return "OTHER";
+}
 
 interface ResultStepProps {
   calculation: SolarCalculationResult;
@@ -83,23 +97,20 @@ export function ResultStep({ calculation, projectType, location, onEditEstimate,
         email: values.email || undefined,
         address: values.address,
       },
-      project: {
-        projectType,
+      projectType,
+      location: {
         city: location.city,
         pincode: location.pincode,
-        monthlyBill: calculation.inputMonthlyBill,
+        address: location.address,
       },
+      monthlyBill: calculation.inputMonthlyBill,
       solarRecommendation: {
         recommendedCapacity: calculation.recommendedCapacity,
         estimatedPanels: calculation.estimatedPanels,
         panelCapacity: calculation.panelCapacity,
         recommendedInverter: calculation.recommendedInverter,
       },
-      source: {
-        utmSource: searchParams.get("utm_source") ?? undefined,
-        utmMedium: searchParams.get("utm_medium") ?? undefined,
-        utmCampaign: searchParams.get("utm_campaign") ?? undefined,
-      },
+      source: resolveLeadSource(searchParams),
     };
     analytics.track("lead_form_submitted");
     leadMutation.mutate(request);

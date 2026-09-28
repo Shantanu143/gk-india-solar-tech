@@ -33,6 +33,15 @@ function withStoredToken(request: Promise<AuthResponse>): Promise<AuthResponse> 
   });
 }
 
+/**
+ * Refresh tokens are single-use (the server revokes-and-rotates on every call), so two refresh
+ * requests firing close together — e.g. React StrictMode mounting `AuthProvider` twice in dev —
+ * would race: whichever reaches the server second finds the cookie's token already revoked by the
+ * first and fails, signing the user out even though their session was fine. Sharing one in-flight
+ * promise means a second caller just waits for the first call's result instead of firing its own.
+ */
+let inFlightRefresh: Promise<AuthResponse> | null = null;
+
 export const authApi = {
   signupCustomer(payload: SignupCustomerPayload) {
     return withStoredToken(apiRequest<AuthResponse>("/auth/signup", { method: "POST", body: JSON.stringify(payload) }));
@@ -52,7 +61,12 @@ export const authApi = {
 
   /** Silent session restore — relies solely on the httpOnly refresh cookie, no body needed. */
   refresh() {
-    return withStoredToken(apiRequest<AuthResponse>("/auth/refresh", { method: "POST" }));
+    if (!inFlightRefresh) {
+      inFlightRefresh = withStoredToken(apiRequest<AuthResponse>("/auth/refresh", { method: "POST" })).finally(() => {
+        inFlightRefresh = null;
+      });
+    }
+    return inFlightRefresh;
   },
 
   async logout() {

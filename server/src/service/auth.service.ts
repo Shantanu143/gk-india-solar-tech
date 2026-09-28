@@ -96,13 +96,12 @@ export const authService = {
   },
 
   async refresh(token: string): Promise<AuthResult> {
-    const existing = await refreshTokenRepository.findValidByToken(token);
+    const existing = await refreshTokenRepository.findValidAndRevoke(token);
     if (!existing) throw ApiError.unauthorized("Session expired. Please log in again.");
 
     const user = await userRepository.findById(existing.user.toString());
     if (!user || user.status === "INACTIVE") throw ApiError.unauthorized("Session expired. Please log in again.");
 
-    await refreshTokenRepository.revoke(token);
     const { accessToken, refreshToken } = await issueTokens(user._id.toString(), user.role);
     return { user: toPublicUser(user), accessToken, refreshToken };
   },

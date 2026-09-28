@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Download, Plus, Send, Trash2, XCircle } from "lucide-react";
+import { CheckCircle2, Download, Mail, MessageCircle, Plus, Send, Trash2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -10,6 +10,7 @@ import { GlassPanel } from "@/features/crm/components/GlassPanel";
 import { Modal } from "@/features/crm/components/Modal";
 import { SkeletonRows } from "@/features/crm/components/LoadingSkeleton";
 import { PageHeader } from "@/features/crm/components/PageHeader";
+import { useAuth } from "@/features/crm/hooks/authContext";
 import { useLead } from "@/features/leads/hooks/useLead";
 import type { Lead } from "@/features/leads/types/lead";
 import { LOST_REASON_LABEL, type LostReason } from "@/features/leads/types/lead";
@@ -25,6 +26,7 @@ import { QuotationStatusBadge } from "@/features/quotations/components/Quotation
 import type { Quotation, QuotationItem } from "@/features/quotations/types/quotation";
 import { PRODUCT_CATEGORY_LABEL } from "@/features/products/types/product";
 import { formatDate, formatInr } from "@/lib/format";
+import { ApiError } from "@/services/apiClient";
 
 interface QuotationBuilderViewProps {
   quotationId: string;
@@ -59,6 +61,7 @@ interface QuotationBuilderProps {
 }
 
 function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderProps) {
+  const { can } = useAuth();
   const updateItems = useUpdateQuotationItems();
   const sendQuotation = useSendQuotation();
   const acceptQuotation = useAcceptQuotation();
@@ -73,8 +76,12 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
 
   const isDraft = quotation.status === "DRAFT";
   const isSent = quotation.status === "SENT";
+  const canEdit = can("quotations.create");
   const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
   const totalAmount = Math.max(0, subtotal - quotation.subsidyAmount - discountAmount);
+  // Blank descriptions and non-positive quantities pass client state fine but 400 at the server —
+  // block Save/Send on them here instead of letting the request fail with no clue which row is bad.
+  const hasInvalidItems = items.some((item) => !item.description.trim() || item.quantity <= 0);
   const isMutating = updateItems.isPending || sendQuotation.isPending;
 
   function updateItem(id: string, patch: Partial<Pick<QuotationItem, "description" | "quantity" | "unitPrice">>) {
@@ -153,15 +160,20 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
                 <th className="px-4 py-3 text-right text-xs font-semibold tracking-wide text-muted-foreground uppercase">Qty</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold tracking-wide text-muted-foreground uppercase">Unit Price</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold tracking-wide text-muted-foreground uppercase">Amount</th>
-                {isDraft && <th className="px-4 py-3" />}
+                {isDraft && canEdit && <th className="px-4 py-3" />}
               </tr>
             </thead>
             <tbody>
               {items.map((item) =>
-                isDraft ? (
+                isDraft && canEdit ? (
                   <tr key={item.id} className="border-b border-border last:border-0">
                     <td className="px-4 py-2">
-                      <Input value={item.description} onChange={(e) => updateItem(item.id, { description: e.target.value })} className="h-9" />
+                      <Input
+                        value={item.description}
+                        invalid={!item.description.trim()}
+                        onChange={(e) => updateItem(item.id, { description: e.target.value })}
+                        className="h-9"
+                      />
                     </td>
                     <td className="px-4 py-2 text-sm text-foreground/70">{PRODUCT_CATEGORY_LABEL[item.category]}</td>
                     <td className="px-4 py-2">
@@ -203,7 +215,7 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
           </table>
         </div>
 
-        {isDraft && (
+        {isDraft && canEdit && (
           <div className="border-t border-border px-4 py-3">
             <Button type="button" variant="secondary" size="sm" className="gap-1.5" onClick={addItem}>
               <Plus className="h-4 w-4" aria-hidden="true" />
@@ -225,7 +237,7 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
           )}
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Discount</span>
-            {isDraft ? (
+            {isDraft && canEdit ? (
               <Input
                 type="number"
                 min="0"
@@ -252,7 +264,7 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
 
       <GlassPanel className="p-4">
         <Label htmlFor="quotation-notes">Notes</Label>
-        {isDraft ? (
+        {isDraft && canEdit ? (
           <Textarea id="quotation-notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes for the customer…" />
         ) : (
           <p className="text-sm text-foreground/80">{quotation.notes || "—"}</p>
@@ -260,19 +272,19 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
       </GlassPanel>
 
       <div className="flex flex-wrap items-center gap-2">
-        {isDraft && (
+        {isDraft && canEdit && (
           <>
-            <Button type="button" variant="secondary" disabled={isMutating} onClick={handleSaveDraft}>
+            <Button type="button" variant="secondary" disabled={isMutating || hasInvalidItems} onClick={handleSaveDraft}>
               {updateItems.isPending ? "Saving…" : "Save Draft"}
             </Button>
-            <Button type="button" className="gap-1.5" disabled={isMutating || items.length === 0} onClick={handleSend}>
+            <Button type="button" className="gap-1.5" disabled={isMutating || items.length === 0 || hasInvalidItems} onClick={handleSend}>
               <Send className="h-4 w-4" aria-hidden="true" />
               {sendQuotation.isPending ? "Sending…" : "Send Quotation"}
             </Button>
           </>
         )}
 
-        {isSent && (
+        {isSent && canEdit && (
           <>
             <Button
               type="button"
@@ -296,10 +308,58 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
             {downloading ? "Preparing…" : "Download PDF"}
           </Button>
         )}
+
+        {!isDraft && lead && (
+          <>
+            <Button asChild variant="secondary" className="gap-1.5">
+              <a
+                href={`https://wa.me/91${lead.customer.whatsapp}?text=${encodeURIComponent(
+                  `Hi ${lead.customer.fullName}, here is your GK India SolarTech quotation ${quotation.quotationNumber} for ${formatInr(quotation.totalAmount)}. I'm attaching the PDF here.`,
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                WhatsApp Customer
+              </a>
+            </Button>
+            {lead.customer.email && (
+              <Button asChild variant="secondary" className="gap-1.5">
+                <a
+                  href={`mailto:${lead.customer.email}?subject=${encodeURIComponent(
+                    `Your Solar Quotation ${quotation.quotationNumber}`,
+                  )}&body=${encodeURIComponent(
+                    `Hi ${lead.customer.fullName},\n\nPlease find your solar quotation ${quotation.quotationNumber} attached (${formatInr(quotation.totalAmount)} total).\n\nThanks,\nGK India SolarTech`,
+                  )}`}
+                >
+                  <Mail className="h-4 w-4" aria-hidden="true" />
+                  Email Customer
+                </a>
+              </Button>
+            )}
+          </>
+        )}
       </div>
 
+      {isDraft && canEdit && (
+        <p className="text-xs text-muted-foreground">
+          "Send Quotation" marks it sent and moves the lead forward — download the PDF and share it via WhatsApp or
+          Email afterward to actually deliver it to the customer.
+        </p>
+      )}
+
+      {isDraft && hasInvalidItems && (
+        <p className="text-sm text-error">Every line item needs a description and a quantity greater than 0 before you can save or send this quotation.</p>
+      )}
+
       {(updateItems.isError || sendQuotation.isError) && (
-        <p className="text-sm text-error">Something went wrong saving this quotation. Please try again.</p>
+        <p className="text-sm text-error">
+          {updateItems.error instanceof ApiError
+            ? updateItems.error.message
+            : sendQuotation.error instanceof ApiError
+              ? sendQuotation.error.message
+              : "Something went wrong saving this quotation. Please try again."}
+        </p>
       )}
 
       <Modal
