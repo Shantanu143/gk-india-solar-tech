@@ -9,10 +9,10 @@ async function main() {
   process.env.JWT_ACCESS_SECRET = "x";
   await mongoose.connect(mongod.getUri());
 
-  const { LeadModel } = await import("../models/Lead.model");
-  const { FinalSolarConfigurationModel } = await import("../models/FinalSolarConfiguration.model");
-  const { QuotationModel } = await import("../models/Quotation.model");
-  const { quotationService } = await import("../service/quotation.service");
+  const { LeadModel } = await import("../models/Lead.model.js");
+  const { FinalSolarConfigurationModel } = await import("../models/FinalSolarConfiguration.model.js");
+  const { QuotationModel } = await import("../models/Quotation.model.js");
+  const { quotationService } = await import("../service/quotation.service.js");
 
   const lead = await LeadModel.create({
     leadId: "GK-L-1", projectType: "RESIDENTIAL", monthlyBill: 3200, source: "GOOGLE_ADS", status: "QUOTATION_PREPARED", interest: "HIGH", priority: "HIGH",
@@ -38,9 +38,9 @@ async function main() {
   console.log("public pdf bytes:", pdf.length, "header:", pdf.subarray(0, 5).toString());
   const again = await quotationService.sendQuotation({ id: q.id, actorName: "Sales", requestBaseUrl: "https://api.example.in" });
   console.log("resend ok, same token:", again.pdfUrl === sent.pdfUrl);
-  await quotationService.getPdfByShareToken("nope").catch((e) => console.log("bad token ->", e.message));
+  await quotationService.getPdfByShareToken("nope").catch((e: Error) => console.log("bad token ->", e.message));
 
   await mongoose.disconnect();
   await mongod.stop();
 }
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e: Error) => { console.error(e); process.exit(1); });
