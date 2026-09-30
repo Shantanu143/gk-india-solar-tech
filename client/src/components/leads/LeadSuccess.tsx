@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
 import { motion } from "framer-motion";
-import { CheckCircle2, Download, Home, MessageCircle } from "lucide-react";
+import { CheckCircle2, Download, Home } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Reveal } from "@/components/ui/Reveal";
@@ -98,13 +99,13 @@ export function LeadSuccess({ firstName, leadId, projectType, city, recommendedC
         {whatsAppLink ? (
           <Button asChild size="lg">
             <a href={whatsAppLink} target="_blank" rel="noreferrer" className="gap-1.5">
-              <MessageCircle className="h-4 w-4" aria-hidden="true" />
+              <WhatsAppIcon className="h-4 w-4" aria-hidden="true" />
               Chat On WhatsApp
             </a>
           </Button>
         ) : (
           <Button size="lg" disabled className="gap-1.5" title="WhatsApp contact will be available soon">
-            <MessageCircle className="h-4 w-4" aria-hidden="true" />
+            <WhatsAppIcon className="h-4 w-4" aria-hidden="true" />
             Chat On WhatsApp
           </Button>
         )}

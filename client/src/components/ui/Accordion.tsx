@@ -22,13 +22,13 @@ export function AccordionTrigger({
     <AccordionPrimitive.Header className="flex">
       <AccordionPrimitive.Trigger
         className={cn(
-          "group flex flex-1 items-center justify-between gap-4 py-5 text-left text-base font-semibold text-navy transition-colors hover:text-orange",
+          "group flex flex-1 items-center justify-between gap-4 py-5 text-left text-base font-semibold text-navy transition-colors hover:text-sky",
           className,
         )}
         {...props}
       >
         {children}
-        <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-180 group-data-[state=open]:text-orange" />
+        <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-180 group-data-[state=open]:text-sky" />
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>
   );

@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Download, Mail, MessageCircle, Plus, Send, Trash2, XCircle } from "lucide-react";
+import { CheckCircle2, Download, Mail, Plus, Trash2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -12,9 +13,10 @@ import { SkeletonRows } from "@/features/crm/components/LoadingSkeleton";
 import { PageHeader } from "@/features/crm/components/PageHeader";
 import { useAuth } from "@/features/crm/hooks/authContext";
 import { useLead } from "@/features/leads/hooks/useLead";
+import type { SendQuotationResult } from "@/features/quotations/types/quotation";
 import type { Lead } from "@/features/leads/types/lead";
 import { LOST_REASON_LABEL, type LostReason } from "@/features/leads/types/lead";
-import { downloadQuotationPdf } from "@/features/quotations/services/quotationService";
+import { downloadQuotationPdf, shareQuotationPdfFile } from "@/features/quotations/services/quotationService";
 import {
   useAcceptQuotation,
   useRejectQuotation,
@@ -73,6 +75,8 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
   const [rejectOpen, setRejectOpen] = useState(false);
   const [lostReason, setLostReason] = useState<LostReason | "">("");
   const [downloading, setDownloading] = useState(false);
+  const [sentInfo, setSentInfo] = useState<SendQuotationResult | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
 
   const isDraft = quotation.status === "DRAFT";
   const isSent = quotation.status === "SENT";
@@ -117,20 +121,41 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
     updateItems.mutate({ id: quotation.id, items: itemsPayload(), discountAmount, notes });
   }
 
-  function handleSend() {
-    updateItems.mutate(
-      { id: quotation.id, items: itemsPayload(), discountAmount, notes },
-      { onSuccess: () => sendQuotation.mutate(quotation.id) },
-    );
+  function deliver() {
+    sendQuotation.mutate(quotation.id, {
+      onSuccess: (result) => {
+        setSentInfo(result);
+        // Opens the customer's WhatsApp chat with the message (incl. PDF link) already typed in.
+        window.open(result.whatsappLink, "_blank", "noopener");
+      },
+    });
   }
 
-  async function handleDownload() {
+  async function handleShareFile() {
+    setShareError(null);
+    try {
+      const shared = await shareQuotationPdfFile(sentInfo?.quotation ?? quotation, lead?.customer.fullName ?? "there");
+      if (!shared) setShareError("This device can't share files directly — use Open WhatsApp (link) or Download PDF.");
+    } catch {
+      setShareError("Couldn't share the PDF. Please try again or use Download PDF.");
+    }
+  }
+
+  function handleSend() {
+    updateItems.mutate({ id: quotation.id, items: itemsPayload(), discountAmount, notes }, { onSuccess: deliver });
+  }
+
+  async function downloadPdf(target: Quotation) {
     setDownloading(true);
     try {
-      await downloadQuotationPdf(quotation);
+      await downloadQuotationPdf(target);
     } finally {
       setDownloading(false);
     }
+  }
+
+  function handleDownload() {
+    return downloadPdf(quotation);
   }
 
   return (
@@ -278,8 +303,8 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
               {updateItems.isPending ? "Saving…" : "Save Draft"}
             </Button>
             <Button type="button" className="gap-1.5" disabled={isMutating || items.length === 0 || hasInvalidItems} onClick={handleSend}>
-              <Send className="h-4 w-4" aria-hidden="true" />
-              {sendQuotation.isPending ? "Sending…" : "Send Quotation"}
+              <WhatsAppIcon className="h-4 w-4" />
+              {sendQuotation.isPending ? "Sending…" : "Send on WhatsApp"}
             </Button>
           </>
         )}
@@ -311,17 +336,9 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
 
         {!isDraft && lead && (
           <>
-            <Button asChild variant="secondary" className="gap-1.5">
-              <a
-                href={`https://wa.me/91${lead.customer.whatsapp}?text=${encodeURIComponent(
-                  `Hi ${lead.customer.fullName}, here is your GK India SolarTech quotation ${quotation.quotationNumber} for ${formatInr(quotation.totalAmount)}. I'm attaching the PDF here.`,
-                )}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                WhatsApp Customer
-              </a>
+            <Button type="button" variant="secondary" className="gap-1.5" disabled={sendQuotation.isPending} onClick={deliver}>
+              <WhatsAppIcon className="h-4 w-4" />
+              {sendQuotation.isPending ? "Sending…" : quotation.whatsappSentAt ? "Resend on WhatsApp" : "Send on WhatsApp"}
             </Button>
             {lead.customer.email && (
               <Button asChild variant="secondary" className="gap-1.5">
@@ -343,14 +360,32 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
 
       {isDraft && canEdit && (
         <p className="text-xs text-muted-foreground">
-          "Send Quotation" marks it sent and moves the lead forward — download the PDF and share it via WhatsApp or
-          Email afterward to actually deliver it to the customer.
+          "Send on WhatsApp" marks the quotation sent, moves the lead forward, and opens WhatsApp with the customer's chat and a ready-made message that includes a private link to the PDF — just press send. On a phone, "Share PDF file" attaches the PDF itself.
         </p>
       )}
 
       {isDraft && hasInvalidItems && (
         <p className="text-sm text-error">Every line item needs a description and a quantity greater than 0 before you can save or send this quotation.</p>
       )}
+
+      {sentInfo && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-green/30 bg-green/5 p-4 text-sm text-navy" role="status">
+          <WhatsAppIcon className="h-5 w-5 shrink-0 text-[#25D366]" />
+          <span className="min-w-0 flex-1">
+            Quotation marked as sent. WhatsApp opened with {lead?.customer.fullName ?? "the customer"}&apos;s chat and the
+            message ready — just press send. The message contains a private link to the PDF.
+          </span>
+          <Button asChild size="sm" className="gap-1.5 bg-[#25D366] hover:bg-[#1fb857]">
+            <a href={sentInfo.whatsappLink} target="_blank" rel="noreferrer">
+              <WhatsAppIcon className="h-4 w-4" /> Open WhatsApp again
+            </a>
+          </Button>
+          <Button type="button" size="sm" variant="secondary" onClick={handleShareFile}>
+            Share PDF file
+          </Button>
+        </div>
+      )}
+      {shareError && <p className="text-sm text-error">{shareError}</p>}
 
       {(updateItems.isError || sendQuotation.isError) && (
         <p className="text-sm text-error">

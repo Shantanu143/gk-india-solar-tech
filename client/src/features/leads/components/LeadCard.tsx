@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { MessageCircle, Phone } from "lucide-react";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
+import { Phone } from "lucide-react";
 import { GlassPanel as Card } from "@/features/crm/components/GlassPanel";
 import { PriorityBadge } from "@/features/crm/components/PriorityBadge";
 import { LeadStatusBadge } from "@/features/leads/components/LeadStatusBadge";
@@ -60,7 +61,7 @@ export function LeadCard({ lead, detailHref, nextFollowUp, showAssignee = true }
           rel="noreferrer"
           className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-border text-sm font-semibold text-navy hover:bg-navy/5"
         >
-          <MessageCircle className="h-4 w-4" aria-hidden="true" />
+          <WhatsAppIcon className="h-4 w-4" aria-hidden="true" />
           WhatsApp
         </a>
       </div>

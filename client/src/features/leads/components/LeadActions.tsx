@@ -1,4 +1,5 @@
-import { ClipboardList, FileText, Mail, MessageCircle, Phone, UserPlus } from "lucide-react";
+import { ClipboardList, FileText, Mail, Phone, UserPlus } from "lucide-react";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/features/crm/hooks/authContext";
@@ -55,7 +56,7 @@ export function LeadActions({ lead, onAssign, onAddFollowUp, onScheduleSurvey }:
       </Button>
       <Button asChild variant="secondary" size="sm" className="gap-1.5">
         <a href={`https://wa.me/91${lead.customer.whatsapp}`} target="_blank" rel="noreferrer">
-          <MessageCircle className="h-4 w-4" aria-hidden="true" />
+          <WhatsAppIcon className="h-4 w-4" aria-hidden="true" />
           WhatsApp
         </a>
       </Button>

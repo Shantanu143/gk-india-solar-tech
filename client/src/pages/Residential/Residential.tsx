@@ -69,7 +69,8 @@ export function Residential() {
         eyebrow="Residential Solar"
         title="Power Your Home With Solar"
         description="Reduce your monthly electricity expenses with a rooftop solar system designed for your home — backed by professional installation, subsidy assistance and ongoing support."
-        illustrationVariant="residential"
+        heroImage="/images/house-modern.jpg"
+        sideImage="/images/installer.jpg"
         benefits={BENEFITS}
         highlights={HIGHLIGHTS}
         faqItems={FAQ_ITEMS}

@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import { BannerStrip } from "@/components/marketing/kit/BannerStrip";
 import { Container } from "@/components/layout/Container";
 import { Seo } from "@/components/layout/Seo";
 import { Button } from "@/components/ui/Button";
@@ -84,7 +85,8 @@ export function PartnerApplyPage() {
         noindex
       />
 
-      <section className="py-10 sm:py-14">
+      <section className="relative isolate pt-44 pb-14 sm:pt-52">
+      <BannerStrip />
         <Container className="mx-auto max-w-3xl">
           <div className="text-center">
             <span className="text-xs font-bold tracking-[0.14em] text-orange uppercase">Partner Program</span>

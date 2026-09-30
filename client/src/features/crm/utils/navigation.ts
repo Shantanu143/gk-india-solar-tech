@@ -7,7 +7,6 @@ import {
   FolderKanban,
   Handshake,
   LayoutDashboard,
-  Megaphone,
   Package,
   Percent,
   Settings,
@@ -53,7 +52,6 @@ export const ADMIN_NAV_ITEMS: CrmNavEntry[] = [
     items: [
       link("Quotations", CRM_ROUTES.adminQuotations, FileText),
       link("Products", CRM_ROUTES.adminProducts, Boxes),
-      link("Marketing Leads", CRM_ROUTES.adminMarketingLeads, Megaphone),
     ],
   },
   {

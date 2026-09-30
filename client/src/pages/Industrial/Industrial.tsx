@@ -69,7 +69,8 @@ export function Industrial() {
         eyebrow="Industrial Solar"
         title="Powering Industrial Growth With Solar"
         description="Large-scale solar solutions engineered for industrial requirements — from initial design through installation, with dedicated project management at every stage."
-        illustrationVariant="industrial"
+        heroImage="/images/warehouse.jpg"
+        sideImage="/images/industrial.jpg"
         benefits={BENEFITS}
         highlights={HIGHLIGHTS}
         faqItems={FAQ_ITEMS}

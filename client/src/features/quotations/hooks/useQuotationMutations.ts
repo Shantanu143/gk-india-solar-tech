@@ -38,7 +38,7 @@ export function useSendQuotation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: sendQuotation,
-    onSuccess: (quotation) => invalidateAllFor(queryClient, quotation),
+    onSuccess: ({ quotation }) => invalidateAllFor(queryClient, quotation),
   });
 }
 

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CheckCircle2, Home, LogIn } from "lucide-react";
+import { BannerStrip } from "@/components/marketing/kit/BannerStrip";
 import { Container } from "@/components/layout/Container";
 import { Seo } from "@/components/layout/Seo";
 import { Card } from "@/components/ui/Card";
@@ -17,7 +18,8 @@ const NEXT_STEPS = [
 
 export function PartnerApplySuccessPage() {
   return (
-    <section className="py-14 sm:py-20">
+    <section className="relative isolate pt-44 pb-14 sm:pt-52">
+      <BannerStrip />
       <Seo
         title="Partner Application Submitted | GK India SolarTech"
         description="Your GK India SolarTech partner application has been submitted and is under review."

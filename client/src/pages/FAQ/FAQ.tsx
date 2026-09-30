@@ -1,8 +1,16 @@
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, Phone } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Seo } from "@/components/layout/Seo";
-import { Container } from "@/components/layout/Container";
+import { CTASection } from "@/components/marketing/CTASection";
 import { FAQSection } from "@/components/marketing/FAQSection";
-import { SectionHeading } from "@/components/ui/SectionHeading";
+
+import { PageHero } from "@/components/marketing/kit/PageHero";
+
+import { Section } from "@/components/marketing/kit/Section";
+
+import { Button } from "@/components/ui/Button";
+import { Reveal } from "@/components/ui/Reveal";
+import { ROUTES } from "@/constant/routes";
 import { faqItems } from "@/data/faq";
 
 export function FAQ() {
@@ -13,17 +21,30 @@ export function FAQ() {
         description="Answers to common questions about solar estimates, government subsidy, net metering, installation and AMC support from GK India SolarTech."
         path="/faq"
       />
-      <section className="py-20 sm:py-28">
-        <Container className="flex flex-col items-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-navy/8 text-navy">
-            <HelpCircle className="h-7 w-7" aria-hidden="true" />
-          </span>
-          <SectionHeading className="mt-5" eyebrow="FAQ" title="Frequently Asked Questions" />
-          <div className="mt-12 w-full">
-            <FAQSection items={faqItems} />
-          </div>
-        </Container>
-      </section>
+      <PageHero
+        size="short"
+        eyebrow="FAQ"
+        title="Frequently Asked Questions"
+        description="Straight answers on estimates, subsidy, net metering, installation and support."
+        image="/images/field.jpg"
+        chips={[{ icon: HelpCircle, label: "Can't find it? Ask us below" }]}
+      />
+      <Section tone="muted">
+        <FAQSection items={faqItems} />
+        <Reveal className="mt-10 flex justify-center">
+          <Button asChild size="lg">
+            <Link to={ROUTES.contact}>
+              <Phone className="h-4 w-4" aria-hidden="true" /> Talk To Our Team
+            </Link>
+          </Button>
+        </Reveal>
+      </Section>
+      <CTASection
+        heading="Ready To See Your Savings?"
+        description="Get a free solar estimate based on your electricity usage."
+        primaryLabel="Get Free Solar Estimate"
+        primaryHref={ROUTES.solarEstimate}
+      />
     </>
   );
 }

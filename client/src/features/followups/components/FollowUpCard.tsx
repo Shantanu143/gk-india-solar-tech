@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Calendar, Mail, MessageCircle, Phone, Users } from "lucide-react";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
+import { Calendar, Mail, Phone, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { GlassPanel as Card } from "@/features/crm/components/GlassPanel";
 import { PriorityBadge } from "@/features/crm/components/PriorityBadge";
@@ -9,7 +10,7 @@ import { formatDate, formatTime } from "@/lib/format";
 
 const TYPE_ICON: Record<FollowUp["type"], LucideIcon> = {
   CALL: Phone,
-  WHATSAPP: MessageCircle,
+  WHATSAPP: WhatsAppIcon,
   EMAIL: Mail,
   MEETING: Users,
   OTHER: Calendar,

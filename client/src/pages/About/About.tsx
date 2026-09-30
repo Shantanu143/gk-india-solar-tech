@@ -1,13 +1,20 @@
-import { BadgeCheck, Handshake, ShieldCheck, Sparkles } from "lucide-react";
-import { Container } from "@/components/layout/Container";
+import { BadgeCheck, Handshake, ShieldCheck, Sparkles, Target, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Seo } from "@/components/layout/Seo";
 import { CTASection } from "@/components/marketing/CTASection";
+
 import { FeatureCard } from "@/components/marketing/FeatureCard";
-import { SolutionCard } from "@/components/marketing/SolutionCard";
+import { PageHero } from "@/components/marketing/kit/PageHero";
+import { PhotoTile } from "@/components/marketing/kit/PhotoTile";
+import { Section } from "@/components/marketing/kit/Section";
+import { SplitFeature } from "@/components/marketing/kit/SplitFeature";
+import { StatsBand } from "@/components/marketing/kit/StatsBand";
+import { StepsGrid } from "@/components/marketing/kit/StepsGrid";
+import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
-import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ROUTES } from "@/constant/routes";
 import { solutionCards } from "@/data/solutions";
+import { processSteps } from "@/data/process";
 
 const VALUES = [
   {
@@ -40,52 +47,95 @@ export function About() {
         description="GK India SolarTech is a solar EPC company offering residential, commercial and industrial solar solutions, from estimate through installation and support."
         path="/about"
       />
-      <section className="py-16 sm:py-20">
-        <Container className="flex flex-col items-center text-center">
-          <Reveal className="flex flex-col items-center">
-            <span className="text-xs font-bold tracking-[0.14em] text-orange uppercase">About Us</span>
-            <h1 className="mt-3 max-w-2xl text-3xl font-bold text-navy sm:text-4xl">About GK India SolarTech</h1>
-            <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              GK India SolarTech is a solar EPC company offering residential, commercial and
-              industrial solar solutions — from your free estimate through installation, net
-              metering and ongoing support. Our goal is to make the switch to solar simple,
-              transparent and reliable.
-            </p>
-          </Reveal>
-        </Container>
-      </section>
+      <PageHero
+        eyebrow="About Us"
+        title="About GK India SolarTech"
+        description="A solar EPC company making the switch to solar simple, transparent and reliable — from your free estimate through installation, net metering and ongoing support."
+        image="/images/field.jpg"
+        imagePosition="center 40%"
+        chips={[
+          { icon: ShieldCheck, label: "Transparent" },
+          { icon: BadgeCheck, label: "Accountable" },
+          { icon: Handshake, label: "Supportive" },
+        ]}
+        actions={
+          <>
+            <Button asChild variant="white" size="lg">
+              <Link to={ROUTES.solarEstimate}>Get Free Solar Estimate</Link>
+            </Button>
+            <Button asChild variant="glass" size="lg">
+              <Link to={ROUTES.contact}>Contact Us</Link>
+            </Button>
+          </>
+        }
+      />
 
-      <section className="bg-surface py-16 sm:py-20">
-        <Container className="flex flex-col items-center">
-          <SectionHeading eyebrow="What We Do" title="Solar Solutions For Every Property" />
-          <div className="mt-12 grid w-full grid-cols-1 gap-6 md:grid-cols-3">
-            {solutionCards.map((card, i) => (
-              <Reveal key={card.id} delay={i * 0.08}>
-                <SolutionCard
-                  icon={card.icon}
-                  title={card.title}
-                  description={card.description}
-                  benefits={card.benefits}
-                  href={card.href}
-                />
-              </Reveal>
-            ))}
-          </div>
-        </Container>
-      </section>
+      <SplitFeature
+        eyebrow="Our Story"
+        title="Clean Energy, Handled End-To-End"
+        description="GK India SolarTech is a solar EPC company offering residential, commercial and industrial solar solutions. One accountable team designs, procures and builds your system — then stays with you after commissioning through AMC and support. Our goal is to make the switch to solar simple, transparent and reliable."
+        bullets={[
+          "Engineering, procurement & construction under one roof",
+          "Mounting structure manufacturing for durability",
+          "Subsidy and net-metering paperwork handled with you",
+          "Annual maintenance so your system keeps performing",
+        ]}
+        image="/images/installer.jpg"
+        imageAlt="Installer fitting a solar panel"
+        badge={{ icon: Users, value: "One team", label: "Estimate to support" }}
+      />
 
-      <section className="py-16 sm:py-20">
-        <Container className="flex flex-col items-center">
-          <SectionHeading eyebrow="Our Approach" title="How We Work With You" />
-          <div className="mt-12 grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {VALUES.map((value, i) => (
-              <Reveal key={value.title} delay={i * 0.06}>
-                <FeatureCard icon={value.icon} title={value.title} description={value.description} />
-              </Reveal>
-            ))}
-          </div>
-        </Container>
-      </section>
+      <StatsBand
+        image="/images/field-sky.jpg"
+        stats={[
+          { to: 3, label: "Segments served" },
+          { to: 8, label: "Step delivery process" },
+          { to: 4, label: "Product categories" },
+          { to: 100, suffix: "%", label: "EPC accountability" },
+        ]}
+      />
+
+      <Section tone="surface" eyebrow="What We Do" title="Solar Solutions For Every Property">
+        <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-3">
+          {solutionCards.map((card, i) => (
+            <Reveal key={card.id} delay={i * 0.08} direction="scale">
+              <PhotoTile
+                image={card.image}
+                icon={card.icon}
+                title={card.title}
+                description={card.description}
+                href={card.href}
+              />
+            </Reveal>
+          ))}
+        </div>
+      </Section>
+
+      <SplitFeature
+        reverse
+        tone="muted"
+        eyebrow="Our Mission"
+        title="Making Solar Simple For Every Indian Property"
+        description="We believe going solar shouldn't feel complicated. That's why every project starts with a free, no-pressure estimate and a clear proposal — so you know exactly what you're getting before you commit."
+        bullets={["Estimate-first conversations", "Quality components, professional installation", "Support that continues after commissioning"]}
+        image="/images/wind-hills.jpg"
+        imageAlt="Wind turbines over green hills"
+        badge={{ icon: Target, value: "Clear", label: "Proposals before commitment" }}
+      />
+
+      <Section eyebrow="Our Approach" title="How We Work With You">
+        <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {VALUES.map((value, i) => (
+            <Reveal key={value.title} delay={i * 0.07}>
+              <FeatureCard icon={value.icon} title={value.title} description={value.description} />
+            </Reveal>
+          ))}
+        </div>
+      </Section>
+
+      <Section tone="surface" eyebrow="Our Process" title="Eight Steps To Solar">
+        <StepsGrid steps={processSteps} columns={4} />
+      </Section>
 
       <CTASection
         heading="Ready To Start Your Solar Journey?"

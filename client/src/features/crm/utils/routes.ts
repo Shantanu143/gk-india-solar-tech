@@ -14,7 +14,6 @@ export const CRM_ROUTES = {
   adminProjectDetail: (id: string) => `/admin/projects/${id}`,
   adminMaterials: "/admin/materials",
   adminProducts: "/admin/products",
-  adminMarketingLeads: "/admin/marketing-leads",
   adminReports: "/admin/reports",
   adminSettings: "/admin/settings",
 

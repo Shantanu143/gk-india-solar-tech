@@ -1,13 +1,17 @@
-import { Link } from "react-router-dom";
 import { Building2, HardHat, Users } from "lucide-react";
-import { Container } from "@/components/layout/Container";
+import { Link } from "react-router-dom";
 import { Seo } from "@/components/layout/Seo";
 import { CTASection } from "@/components/marketing/CTASection";
+
 import { FeatureCard } from "@/components/marketing/FeatureCard";
-import { ProcessTimeline } from "@/components/marketing/ProcessTimeline";
+import { PageHero } from "@/components/marketing/kit/PageHero";
+
+import { Section } from "@/components/marketing/kit/Section";
+
+import { StatsBand } from "@/components/marketing/kit/StatsBand";
+import { StepsGrid } from "@/components/marketing/kit/StepsGrid";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
-import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ROUTES } from "@/constant/routes";
 import type { ProcessStep } from "@/types/common";
 
@@ -50,59 +54,51 @@ export function BecomePartnerPage() {
         description="Partner with GK India SolarTech as a sales/referral, installation/service or EPC/project partner and earn commission on every booking."
         path={ROUTES.becomePartner}
       />
+      <PageHero
+        eyebrow="Partner Program"
+        title="Grow Your Business – Become a Solar Partner"
+        description="Refer customers, install systems, or deliver full EPC projects — and earn commission on every booking, backed by our sales and delivery team."
+        image="/images/handshake.jpg"
+        actions={
+          <>
+            <Button asChild variant="white" size="lg">
+              <Link to={ROUTES.partnerApply}>Apply To Become A Partner</Link>
+            </Button>
+            <Button asChild variant="glass" size="lg">
+              <Link to={ROUTES.login}>Already A Partner? Sign In</Link>
+            </Button>
+          </>
+        }
+      />
 
-      <section className="py-16 sm:py-20">
-        <Container className="flex flex-col items-center text-center">
-          <Reveal className="flex flex-col items-center">
-            <span className="text-xs font-bold tracking-[0.14em] text-orange uppercase">Partner Program</span>
-            <h1 className="mt-3 max-w-3xl text-3xl font-bold text-navy sm:text-4xl lg:text-[2.75rem]">
-              Grow Your Business with GK India SolarTech – Become a Solar Partner
-            </h1>
-            <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Refer customers, install systems, or deliver full EPC projects — and earn commission on
-              every booking, backed by our sales and delivery team.
-            </p>
-            <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-              <Button asChild size="lg">
-                <Link to={ROUTES.partnerApply}>Apply To Become A Partner</Link>
-              </Button>
-              <Button asChild variant="secondary" size="lg">
-                <Link to={ROUTES.login}>Already A Partner? Sign In</Link>
-              </Button>
-            </div>
-          </Reveal>
-        </Container>
-      </section>
+      <Section
+        tone="surface"
+        eyebrow="Partner Types"
+        title="Choose The Partnership That Fits You"
+        description="Every partner type earns commission — pick the one that matches how you want to work with us."
+      >
+        <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-3">
+          {PARTNER_TYPES.map((type, i) => (
+            <Reveal key={type.title} delay={i * 0.08} direction="scale">
+              <FeatureCard icon={type.icon} title={type.title} description={type.description} />
+            </Reveal>
+          ))}
+        </div>
+      </Section>
 
-      <section className="bg-surface py-16 sm:py-20">
-        <Container className="flex flex-col items-center">
-          <SectionHeading
-            eyebrow="Partner Types"
-            title="Choose The Partnership That Fits You"
-            description="Every partner type earns commission — pick the one that matches how you want to work with us."
-          />
-          <div className="mt-12 grid w-full grid-cols-1 gap-6 sm:grid-cols-3">
-            {PARTNER_TYPES.map((type, i) => (
-              <Reveal key={type.title} delay={i * 0.05}>
-                <FeatureCard icon={type.icon} title={type.title} description={type.description} />
-              </Reveal>
-            ))}
-          </div>
-        </Container>
-      </section>
+      <StatsBand
+        image="/images/hillside.jpg"
+        stats={[
+          { to: 3, label: "Partner types" },
+          { to: 8, label: "Simple steps" },
+          { to: 5, label: "Minutes to apply" },
+          { to: 100, suffix: "%", label: "Lead tracking in dashboard" },
+        ]}
+      />
 
-      <section className="py-16 sm:py-20">
-        <Container className="flex flex-col items-center">
-          <SectionHeading
-            eyebrow="How It Works"
-            title="Refer Or Deliver, We Sell, You Earn"
-            description="A simple flow whether you're referring customers or delivering the project yourself."
-          />
-          <div className="mt-14 w-full">
-            <ProcessTimeline steps={PARTNER_PROCESS_STEPS} />
-          </div>
-        </Container>
-      </section>
+      <Section eyebrow="How It Works" title="Refer Or Deliver, We Sell, You Earn" description="A simple flow whether you're referring customers or delivering the project yourself.">
+        <StepsGrid steps={PARTNER_PROCESS_STEPS} columns={4} />
+      </Section>
 
       <CTASection
         eyebrow="Partner Program"

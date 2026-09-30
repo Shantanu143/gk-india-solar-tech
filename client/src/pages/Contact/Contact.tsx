@@ -4,8 +4,9 @@ import { ArrowRight, CheckCircle2, Clock, Mail, MapPin, Phone } from "lucide-rea
 import { useForm } from "react-hook-form";
 import { Container } from "@/components/layout/Container";
 import { Logo } from "@/components/layout/Logo";
+import { CTASection } from "@/components/marketing/CTASection";
+import { ROUTES } from "@/constant/routes";
 import { Seo } from "@/components/layout/Seo";
-import { SolarScene } from "@/components/marketing/illustrations/SolarScene";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -39,9 +40,9 @@ export function Contact() {
       />
 
       {/* Hero: gradient backdrop behind a floating split card */}
-      <section className="relative overflow-hidden bg-navy py-14 sm:py-20">
-        <div aria-hidden="true" className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-orange/25 blur-3xl" />
-        <div aria-hidden="true" className="absolute -bottom-40 -left-32 h-96 w-96 rounded-full bg-navy-light/50 blur-3xl" />
+      <section className="relative isolate overflow-hidden bg-sky-deep pt-36 pb-14 sm:pt-44 sm:pb-20">
+        <img src="/images/highfive.jpg" alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-sky-deep/75" />
 
         <Container className="relative">
           <Reveal>
@@ -49,15 +50,15 @@ export function Contact() {
               {/* Visual side — hidden below lg, where the form takes the full card width */}
               <div className="relative hidden overflow-hidden bg-navy-dark lg:flex lg:flex-col lg:justify-between lg:p-10">
                 <div aria-hidden="true" className="absolute inset-0">
-                  <SolarScene variant="commercial" className="h-full w-full object-cover opacity-90" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-navy-dark via-navy-dark/60 to-navy-dark/10" />
+                  <img src="/images/commercial.jpg" alt="" className="h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-sky-deep via-sky-deep/60 to-sky-deep/10" />
                 </div>
 
-                <span className="relative z-10 text-xs font-bold tracking-[0.18em] text-orange uppercase">Get In Touch</span>
+                <span className="relative z-10 text-xs font-bold tracking-[0.18em] text-sky uppercase">Get In Touch</span>
 
                 <div className="relative z-10 flex flex-col gap-3">
                   <h2 className="text-2xl font-bold text-white xl:text-3xl">
-                    Let&rsquo;s Talk <span className="text-orange">Solar</span>.
+                    Let&rsquo;s Talk <span className="text-orange-light">Solar</span>.
                   </h2>
                   <p className="max-w-xs text-sm text-white/70">
                     Reach out with your details and our team will follow up to discuss your project.
@@ -70,7 +71,7 @@ export function Contact() {
                         href={phone.href}
                         className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-sm transition-colors hover:bg-white/10"
                       >
-                        <Phone className="h-4 w-4 shrink-0 text-orange" aria-hidden="true" />
+                        <Phone className="h-4 w-4 shrink-0 text-sky" aria-hidden="true" />
                         {phone.display}
                       </a>
                     ))}
@@ -78,11 +79,11 @@ export function Contact() {
                       href={`mailto:${COMPANY_EMAIL}`}
                       className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-sm transition-colors hover:bg-white/10"
                     >
-                      <Mail className="h-4 w-4 shrink-0 text-orange" aria-hidden="true" />
+                      <Mail className="h-4 w-4 shrink-0 text-sky" aria-hidden="true" />
                       {COMPANY_EMAIL}
                     </a>
                     <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-sm">
-                      <MapPin className="h-4 w-4 shrink-0 text-orange" aria-hidden="true" />
+                      <MapPin className="h-4 w-4 shrink-0 text-sky" aria-hidden="true" />
                       Pune, Maharashtra, India
                     </div>
                   </div>
@@ -104,7 +105,7 @@ export function Contact() {
                     <h1 className="mt-6 text-3xl font-extrabold text-navy sm:text-4xl">Let&rsquo;s Get In Touch.</h1>
                     <p className="mt-2 text-sm text-muted-foreground">
                       Or just reach out manually to{" "}
-                      <a href={`mailto:${COMPANY_EMAIL}`} className="font-semibold text-orange hover:underline">
+                      <a href={`mailto:${COMPANY_EMAIL}`} className="font-semibold text-sky hover:underline">
                         {COMPANY_EMAIL}
                       </a>
                       .
@@ -198,23 +199,23 @@ export function Contact() {
       </section>
 
       {/* Map + quick contact details */}
-      <section className="py-16 sm:py-20">
+      <section className="py-14 sm:py-20">
         <Container>
           <Reveal className="grid grid-cols-1 gap-6 lg:grid-cols-[0.85fr_1.4fr]">
             <div className="flex flex-col gap-4">
               <div>
-                <span className="text-xs font-bold tracking-[0.14em] text-orange uppercase">Find Us</span>
+                <span className="text-xs font-bold tracking-[0.14em] text-sky uppercase">Find Us</span>
                 <h2 className="mt-2 text-2xl font-bold text-navy">Our Service Area</h2>
               </div>
               <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
-                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-orange" aria-hidden="true" />
+                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-sky" aria-hidden="true" />
                 <div>
                   <p className="text-sm font-semibold text-navy">Pune, Maharashtra, India</p>
                   <p className="text-xs text-muted-foreground">Serving residential, commercial and industrial projects.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
-                <Clock className="mt-0.5 h-5 w-5 shrink-0 text-orange" aria-hidden="true" />
+                <Clock className="mt-0.5 h-5 w-5 shrink-0 text-sky" aria-hidden="true" />
                 <div>
                   <p className="text-sm font-semibold text-navy">Mon – Sat, 9:00 AM – 6:00 PM</p>
                   <p className="text-xs text-muted-foreground">Sundays by appointment.</p>
@@ -224,9 +225,9 @@ export function Contact() {
                 <a
                   key={phone.href}
                   href={phone.href}
-                  className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 text-sm font-semibold text-navy transition-colors hover:border-orange/40 hover:text-orange"
+                  className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 text-sm font-semibold text-navy transition-colors hover:border-sky/40 hover:text-sky"
                 >
-                  <Phone className="h-5 w-5 shrink-0 text-orange" aria-hidden="true" />
+                  <Phone className="h-5 w-5 shrink-0 text-sky" aria-hidden="true" />
                   {phone.display}
                 </a>
               ))}
@@ -244,6 +245,13 @@ export function Contact() {
           </Reveal>
         </Container>
       </section>
+
+      <CTASection
+        heading="Prefer To Start With A Number?"
+        description="Get a free solar estimate in minutes — no obligation."
+        primaryLabel="Get Free Solar Estimate"
+        primaryHref={ROUTES.solarEstimate}
+      />
     </>
   );
 }

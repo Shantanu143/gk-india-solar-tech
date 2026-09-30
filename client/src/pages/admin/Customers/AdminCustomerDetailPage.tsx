@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom";
-import { ArrowRight, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
+import { ArrowRight, Mail, MapPin, Phone } from "lucide-react";
 import { Seo } from "@/components/layout/Seo";
 import { ErrorState } from "@/features/crm/components/ErrorState";
 import { GlassPanel } from "@/features/crm/components/GlassPanel";
@@ -53,7 +54,7 @@ export function AdminCustomerDetailPage() {
             </div>
             {customer.whatsapp && customer.whatsapp !== customer.mobile && (
               <div className="flex items-center gap-2.5 text-foreground/80">
-                <MessageCircle className="h-4 w-4 shrink-0 text-navy" aria-hidden="true" />
+                <WhatsAppIcon className="h-4 w-4 shrink-0 text-navy" aria-hidden="true" />
                 <span>{customer.whatsapp}</span>
               </div>
             )}

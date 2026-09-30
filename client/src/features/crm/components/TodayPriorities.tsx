@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Mail, MessageCircle, Phone, Users, type LucideIcon, Calendar } from "lucide-react";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
+import { Mail, Phone, Users, type LucideIcon, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/features/crm/components/EmptyState";
 import { SkeletonRows } from "@/features/crm/components/LoadingSkeleton";
@@ -11,7 +12,7 @@ import { formatTime } from "@/lib/format";
 
 const TYPE_ICON: Record<FollowUp["type"], LucideIcon> = {
   CALL: Phone,
-  WHATSAPP: MessageCircle,
+  WHATSAPP: WhatsAppIcon,
   EMAIL: Mail,
   MEETING: Users,
   OTHER: Calendar,
@@ -60,7 +61,7 @@ function PriorityItem({ followUp, index }: PriorityItemProps) {
               </Button>
               <Button asChild variant="secondary" size="sm" className="gap-1.5">
                 <a href={`https://wa.me/91${lead.customer.whatsapp}`} target="_blank" rel="noreferrer">
-                  <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                  <WhatsAppIcon className="h-3.5 w-3.5" aria-hidden="true" />
                   WhatsApp
                 </a>
               </Button>

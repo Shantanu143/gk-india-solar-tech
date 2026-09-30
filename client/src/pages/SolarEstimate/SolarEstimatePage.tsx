@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, Lock, ShieldCheck, Sparkles } from "lucide-react";
+import { BannerStrip } from "@/components/marketing/kit/BannerStrip";
 import { Container } from "@/components/layout/Container";
 import { Seo } from "@/components/layout/Seo";
 import { Button } from "@/components/ui/Button";
@@ -99,7 +100,8 @@ function SolarEstimateContent() {
   const isResultStep = state.stepIndex === 3;
 
   return (
-    <section className="py-10 sm:py-14">
+    <section className="relative isolate pt-44 pb-14 sm:pt-52">
+      <BannerStrip />
       <Seo
         title="Free Solar Estimate | GK India SolarTech"
         description="Estimate your solar requirement, potential savings, subsidy and EMI with GK India SolarTech."

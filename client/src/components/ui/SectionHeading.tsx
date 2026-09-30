@@ -29,7 +29,7 @@ export function SectionHeading({
         <span
           className={cn(
             "text-xs font-bold tracking-[0.14em] uppercase",
-            tone === "light" ? "text-orange-light" : "text-orange",
+            tone === "light" ? "text-white/80" : "text-sky",
           )}
         >
           {eyebrow}
@@ -37,7 +37,7 @@ export function SectionHeading({
       )}
       <h2
         className={cn(
-          "max-w-2xl text-3xl font-bold sm:text-4xl",
+          "max-w-2xl font-serif text-4xl font-medium tracking-tight sm:text-5xl",
           tone === "light" ? "text-white" : "text-navy",
         )}
       >

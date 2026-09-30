@@ -10,10 +10,10 @@ export function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-navy-dark text-white/70">
+    <footer className="bg-sky-deep text-white/70">
       <Container className="py-16">
-        <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-6">
-          <div className="sm:col-span-2 lg:col-span-2">
+        <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-[1.5fr_repeat(5,1fr)]">
+          <div className="sm:col-span-2 lg:col-span-1">
             <Logo variant="light" showTagline />
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-white/50">
               Residential, commercial and industrial solar EPC solutions — from estimate through
@@ -27,7 +27,7 @@ export function Footer() {
               <ul className="mt-4 flex flex-col gap-3">
                 {group.links.map((link) => (
                   <li key={link.href}>
-                    <Link to={link.href} className="text-sm text-white/55 transition-colors hover:text-orange-light">
+                    <Link to={link.href} className="text-sm text-white/55 transition-colors hover:text-white">
                       {link.label}
                     </Link>
                   </li>
@@ -36,30 +36,29 @@ export function Footer() {
             </div>
           ))}
 
-          {/* TODO: replace bracketed placeholder with the real company address once supplied. */}
           <div>
             <h3 className="text-sm font-semibold text-white">Contact</h3>
             <ul className="mt-4 flex flex-col gap-3 text-sm text-white/55">
               <li className="flex items-start gap-2">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-orange-light" aria-hidden="true" />
-                <span>[Company Address]</span>
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-white" aria-hidden="true" />
+                <span>Pune, Maharashtra, India</span>
               </li>
               {COMPANY_PHONE_NUMBERS.map((phone) => (
                 <li key={phone.href} className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 shrink-0 text-orange-light" aria-hidden="true" />
-                  <a href={phone.href} className="hover:text-orange-light">
+                  <Phone className="h-4 w-4 shrink-0 text-white" aria-hidden="true" />
+                  <a href={phone.href} className="hover:text-white">
                     {phone.display}
                   </a>
                 </li>
               ))}
               <li className="flex items-center gap-2">
-                <Mail className="h-4 w-4 shrink-0 text-orange-light" aria-hidden="true" />
-                <a href={`mailto:${COMPANY_EMAIL}`} className="hover:text-orange-light">
+                <Mail className="h-4 w-4 shrink-0 text-white" aria-hidden="true" />
+                <a href={`mailto:${COMPANY_EMAIL}`} className="hover:text-white">
                   {COMPANY_EMAIL}
                 </a>
               </li>
               <li>
-                <Link to={ROUTES.contact} className="font-semibold text-orange-light hover:text-orange">
+                <Link to={ROUTES.contact} className="font-semibold text-white hover:text-white">
                   Contact Us
                 </Link>
               </li>

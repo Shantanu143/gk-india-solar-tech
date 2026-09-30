@@ -46,9 +46,6 @@ export const AdminMaterialsPage = lazy(() =>
 export const AdminProductsPage = lazy(() =>
   import("@/pages/admin/Products/AdminProductsPage").then((m) => ({ default: m.AdminProductsPage })),
 );
-export const AdminMarketingLeadsPage = lazy(() =>
-  import("@/pages/admin/MarketingLeads/AdminMarketingLeadsPage").then((m) => ({ default: m.AdminMarketingLeadsPage })),
-);
 export const AdminReportsPage = lazy(() =>
   import("@/pages/admin/Reports/AdminReportsPage").then((m) => ({ default: m.AdminReportsPage })),
 );

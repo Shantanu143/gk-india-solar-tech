@@ -9,7 +9,7 @@ interface FAQSectionProps {
 export function FAQSection({ items }: FAQSectionProps) {
   return (
     <Reveal className="mx-auto w-full max-w-3xl">
-      <Accordion type="single" collapsible className="rounded-xl border border-border bg-surface px-6 shadow-soft sm:px-8">
+      <Accordion type="single" collapsible className="rounded-3xl border border-border bg-surface px-6 shadow-soft sm:px-8">
         {items.map((item) => (
           <AccordionItem key={item.question} value={item.question}>
             <AccordionTrigger>{item.question}</AccordionTrigger>

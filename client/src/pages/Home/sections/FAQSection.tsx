@@ -5,7 +5,7 @@ import { faqItems } from "@/data/faq";
 
 export function FAQSection() {
   return (
-    <section className="bg-background py-20 sm:py-24">
+    <section className="bg-background py-14 sm:py-20">
       <Container className="flex flex-col items-center">
         <SectionHeading eyebrow="FAQ" title="Frequently Asked Questions" />
         <div className="mt-12 w-full">

@@ -1,4 +1,5 @@
-import { Mail, MessageCircle, Phone, Users, type LucideIcon, Calendar } from "lucide-react";
+import { Mail, Phone, Users, type LucideIcon, Calendar } from "lucide-react";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
 import { EmptyState } from "@/features/crm/components/EmptyState";
 import { PriorityBadge } from "@/features/crm/components/PriorityBadge";
 import { FOLLOW_UP_TYPE_LABEL, type FollowUp } from "@/features/followups/types/followUp";
@@ -6,7 +7,7 @@ import { formatTime } from "@/lib/format";
 
 const TYPE_ICON: Record<FollowUp["type"], LucideIcon> = {
   CALL: Phone,
-  WHATSAPP: MessageCircle,
+  WHATSAPP: WhatsAppIcon,
   EMAIL: Mail,
   MEETING: Users,
   OTHER: Calendar,

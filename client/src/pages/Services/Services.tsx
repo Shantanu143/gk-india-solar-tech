@@ -1,12 +1,16 @@
-import { Link } from "react-router-dom";
 import { ClipboardList, IndianRupee, PenTool, Wrench, Zap, type LucideIcon } from "lucide-react";
-import { Container } from "@/components/layout/Container";
+import { Link } from "react-router-dom";
 import { Seo } from "@/components/layout/Seo";
 import { CTASection } from "@/components/marketing/CTASection";
-import { ProcessTimeline } from "@/components/marketing/ProcessTimeline";
-import { Card } from "@/components/ui/Card";
+
+import { PageHero } from "@/components/marketing/kit/PageHero";
+import { PhotoTile } from "@/components/marketing/kit/PhotoTile";
+import { Section } from "@/components/marketing/kit/Section";
+import { SplitFeature } from "@/components/marketing/kit/SplitFeature";
+import { StatsBand } from "@/components/marketing/kit/StatsBand";
+import { StepsGrid } from "@/components/marketing/kit/StepsGrid";
+import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
-import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ROUTES } from "@/constant/routes";
 import { processSteps } from "@/data/process";
 
@@ -52,6 +56,15 @@ const SERVICES: ServiceItem[] = [
   },
 ];
 
+const SERVICE_IMAGES = [
+  "/images/blueprints.jpg",
+  "/images/laptops.jpg",
+  "/images/installer.jpg",
+  "/images/offshore-wind.jpg",
+  "/images/house-modern.jpg",
+  "/images/wiring.jpg",
+];
+
 export function Services() {
   return (
     <>
@@ -60,58 +73,63 @@ export function Services() {
         description="Solar EPC services from GK India SolarTech: site survey, design, installation, net metering assistance, government subsidy assistance and AMC."
         path="/services"
       />
-      <section className="py-16 sm:py-20">
-        <Container className="flex flex-col items-center text-center">
-          <Reveal className="flex flex-col items-center">
-            <span className="text-xs font-bold tracking-[0.14em] text-orange uppercase">Services</span>
-            <h1 className="mt-3 max-w-2xl text-3xl font-bold text-navy sm:text-4xl">
-              End-To-End Solar EPC Services
-            </h1>
-            <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              From your first site survey through installation, net metering, subsidy assistance
-              and ongoing support — one accountable team handles every stage.
-            </p>
-          </Reveal>
-        </Container>
-      </section>
+      <PageHero
+        eyebrow="Services"
+        title="End-To-End Solar EPC Services"
+        description="From your first site survey through installation, net metering, subsidy assistance and ongoing support — one accountable team handles every stage."
+        image="/images/technician-bg.jpg"
+        imagePosition="center 30%"
+        chips={[
+          { icon: ClipboardList, label: "Site Survey" },
+          { icon: Wrench, label: "Installation" },
+          { icon: Zap, label: "Net Metering" },
+          { icon: IndianRupee, label: "Subsidy Help" },
+        ]}
+        actions={
+          <Button asChild variant="white" size="lg">
+            <Link to={ROUTES.solarEstimate}>Get Free Solar Estimate</Link>
+          </Button>
+        }
+      />
 
-      <section className="bg-surface py-16 sm:py-20">
-        <Container className="flex flex-col items-center">
-          <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {SERVICES.map((service, i) => {
-              const content = (
-                <Card className="flex h-full flex-col p-6 hover:-translate-y-1 hover:shadow-soft-lg">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-navy/8 text-navy">
-                    <service.icon className="h-6 w-6" aria-hidden="true" />
-                  </span>
-                  <h3 className="mt-5 text-lg font-bold text-navy">{service.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{service.description}</p>
-                </Card>
-              );
-              return (
-                <Reveal key={service.title} delay={i * 0.05}>
-                  {service.href ? (
-                    <Link to={service.href} className="block h-full">
-                      {content}
-                    </Link>
-                  ) : (
-                    content
-                  )}
-                </Reveal>
-              );
-            })}
-          </div>
-        </Container>
-      </section>
+      <Section tone="surface" eyebrow="What We Offer" title="Everything Your Project Needs">
+        <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {SERVICES.map((service, i) => (
+            <Reveal key={service.title} delay={(i % 3) * 0.08} direction="scale">
+              <PhotoTile
+                image={SERVICE_IMAGES[i]}
+                icon={service.icon}
+                title={service.title}
+                description={service.description}
+                href={service.href}
+              />
+            </Reveal>
+          ))}
+        </div>
+      </Section>
 
-      <section className="py-16 sm:py-20">
-        <Container className="flex flex-col items-center">
-          <SectionHeading eyebrow="How We Work" title="Your Solar Journey, Made Simple" />
-          <div className="mt-14 w-full">
-            <ProcessTimeline steps={processSteps} />
-          </div>
-        </Container>
-      </section>
+      <SplitFeature
+        eyebrow="Design & Engineering"
+        title="Systems Matched To Your Site"
+        description="Every system is designed around your property, electricity usage and site conditions — so you get the right capacity, the right components and a layout that performs."
+        bullets={["Shadow & roof analysis", "Load-matched system sizing", "Component selection & structure design", "Clear proposal before you commit"]}
+        image="/images/blueprints.jpg"
+        imageAlt="Solar design blueprints"
+        badge={{ icon: PenTool, value: "Custom", label: "Designed for your site" }}
+      />
+
+      <Section eyebrow="How We Work" title="Your Solar Journey, Made Simple">
+        <StepsGrid steps={processSteps} columns={4} />
+      </Section>
+
+      <StatsBand
+        stats={[
+          { to: 6, label: "Core services" },
+          { to: 8, label: "Delivery steps" },
+          { to: 3, label: "Segments served" },
+          { to: 1, label: "Accountable team" },
+        ]}
+      />
 
       <CTASection
         heading="Ready To Get Started?"

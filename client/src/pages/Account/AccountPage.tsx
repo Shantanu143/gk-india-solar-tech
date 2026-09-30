@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Handshake } from "lucide-react";
+import { BannerStrip } from "@/components/marketing/kit/BannerStrip";
 import { Container } from "@/components/layout/Container";
 import { Seo } from "@/components/layout/Seo";
 import { Button } from "@/components/ui/Button";
@@ -17,7 +18,8 @@ export function AccountPage() {
   return (
     <>
       <Seo title="My Account | GK India SolarTech" description="Manage your account details." path={ROUTES.account} noindex />
-      <section className="py-14 sm:py-20">
+      <section className="relative isolate pt-44 pb-14 sm:pt-52">
+      <BannerStrip />
         <Container className="mx-auto max-w-2xl">
           <h1 className="text-3xl font-bold text-navy">My Account</h1>
           <p className="mt-1 text-sm text-muted-foreground">Manage your profile and password.</p>

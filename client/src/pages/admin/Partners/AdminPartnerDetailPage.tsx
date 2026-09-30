@@ -1,18 +1,7 @@
 import { useState } from "react";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
 import { useParams } from "react-router-dom";
-import {
-  Ban,
-  CheckCircle2,
-  FileText,
-  Landmark,
-  Mail,
-  MapPin,
-  MessageCircle,
-  Phone,
-  RotateCcw,
-  ShieldCheck,
-  XCircle,
-} from "lucide-react";
+import { Ban, CheckCircle2, FileText, Landmark, Mail, MapPin, Phone, RotateCcw, ShieldCheck, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Seo } from "@/components/layout/Seo";
 import { Avatar } from "@/features/crm/components/Avatar";
@@ -175,7 +164,7 @@ export function AdminPartnerDetailPage() {
             </div>
             {partner.whatsapp && partner.whatsapp !== partner.mobile && (
               <div className="flex items-center gap-2.5 text-foreground/80">
-                <MessageCircle className="h-4 w-4 shrink-0 text-navy" aria-hidden="true" />
+                <WhatsAppIcon className="h-4 w-4 shrink-0 text-navy" aria-hidden="true" />
                 <span>{partner.whatsapp}</span>
               </div>
             )}

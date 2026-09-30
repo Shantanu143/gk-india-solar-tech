@@ -1,10 +1,9 @@
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
+import { motion } from "framer-motion";
 import { Logo } from "@/components/layout/Logo";
-import { SolarScene } from "@/components/marketing/illustrations/SolarScene";
 import { ROUTES } from "@/constant/routes";
 import { trustItems } from "@/data/whyChooseUs";
-import { cn } from "@/lib/utils";
 
 interface AuthLayoutProps {
   title: string;
@@ -15,57 +14,59 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ title, description, children, footer }: AuthLayoutProps) {
   return (
-    <div className="flex h-dvh flex-col overflow-hidden lg:flex-row">
-      {/* Form side — its own scroll container is a safety net for very short viewports; the
-          compact spacing below is tuned to fit without needing it on realistic screen sizes. */}
-      <div className="flex h-full w-full flex-col items-center justify-center overflow-y-auto px-5 py-6 sm:px-8 lg:w-1/2 lg:px-12 xl:px-20">
+    <div className="flex min-h-dvh flex-col lg:h-dvh lg:flex-row lg:overflow-hidden">
+      <motion.div
+        initial={{ opacity: 0, x: -24 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="flex w-full flex-col items-center justify-center overflow-y-auto bg-background px-5 py-10 sm:px-8 lg:h-full lg:w-1/2 lg:px-12 xl:px-20"
+      >
         <div className="w-full max-w-md">
           <Link to={ROUTES.home} className="inline-block">
             <Logo />
           </Link>
 
-          <h1 className="mt-5 text-2xl font-bold text-navy">{title}</h1>
+          <h1 className="mt-6 font-serif text-4xl font-medium text-navy">{title}</h1>
           {description && <p className="mt-1.5 text-sm text-muted-foreground">{description}</p>}
 
-          <div className="mt-5">{children}</div>
+          <div className="mt-6">{children}</div>
 
-          {footer && <div className="mt-5 text-sm text-muted-foreground">{footer}</div>}
+          {footer && <div className="mt-6 text-sm text-muted-foreground">{footer}</div>}
         </div>
-      </div>
+      </motion.div>
 
-      {/* Branded illustration side — hidden below lg, where the form takes the full width */}
-      <div className="relative hidden overflow-hidden bg-navy lg:flex lg:h-full lg:w-1/2 lg:flex-col lg:items-center lg:justify-center lg:p-10 xl:p-14">
-        <div aria-hidden="true" className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-orange/20 blur-3xl" />
-        <div aria-hidden="true" className="absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-navy-light/40 blur-3xl" />
+      <div className="relative isolate hidden overflow-hidden bg-sky-deep text-white lg:flex lg:h-full lg:w-1/2 lg:flex-col lg:justify-end lg:p-12">
+        <motion.img
+          src="/images/hero.jpg"
+          alt=""
+          initial={{ scale: 1.15 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 8, ease: "easeOut" }}
+          className="absolute inset-0 -z-20 h-full w-full object-cover"
+        />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(0deg,rgb(11_47_107/0.9)_0%,rgb(20_80_170/0.35)_60%,rgb(20_80_170/0.2)_100%)]" />
 
-        <div className="relative z-10 flex w-full max-w-md flex-col items-center text-center">
-          <SolarScene variant="hero" className="h-40 w-auto rounded-2xl shadow-soft-lg xl:h-48" />
-
-          <h2 className="mt-5 text-xl font-bold text-white xl:text-2xl">
-            Power Your Future With <span className="text-orange">Solar Energy</span>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.3 }}
+        >
+          <h2 className="max-w-md font-serif text-5xl leading-[1.05] font-normal text-white">
+            Power Your Future With Solar
           </h2>
-          <p className="mt-2 text-sm text-white/70">
+          <p className="mt-4 max-w-md text-base text-white/85">
             End-to-end solar EPC solutions — from your free estimate through installation, net metering and ongoing
             support.
           </p>
-
-          <ul className="mt-5 grid w-full grid-cols-2 gap-2.5 text-left">
-            {trustItems.map(({ icon: Icon, label }, index) => (
-              <li
-                key={label}
-                className={cn(
-                  "flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 backdrop-blur-sm",
-                  index === 0 && "col-span-2",
-                )}
-              >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange/20 text-orange">
-                  <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-                </span>
-                <span className="text-xs font-semibold text-white/90">{label}</span>
+          <ul className="mt-6 grid max-w-lg grid-cols-2 gap-2.5">
+            {trustItems.slice(0, 4).map(({ icon: Icon, label }) => (
+              <li key={label} className="glass flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5">
+                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="text-xs font-medium">{label}</span>
               </li>
             ))}
           </ul>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

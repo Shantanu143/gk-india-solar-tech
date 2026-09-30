@@ -1,21 +1,21 @@
 import { useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { ChevronDown, Menu } from "lucide-react";
+import { ChevronDown, Menu, Phone } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { COMPANY_PHONE_NUMBERS } from "@/config/contact";
 import { useScrolled } from "@/hooks/useScrolled";
 import { ROUTES } from "@/constant/routes";
 import { mainNavLinks } from "@/data/navigation";
 import { HeaderAuthLinks } from "@/features/auth/components/HeaderAuthLinks";
 import { cn } from "@/lib/utils";
-import { Container } from "./Container";
 import { Logo } from "./Logo";
 import { MobileMenu } from "./MobileMenu";
 
 const navLinkClasses = (isActive: boolean) =>
   cn(
-    "rounded-full px-3 py-2 text-sm font-semibold text-navy/80 transition-colors duration-200 hover:bg-navy/5 hover:text-navy",
-    isActive && "bg-navy/8 text-navy",
+    "rounded-full px-3.5 py-2 text-sm font-medium text-white/85 transition-colors duration-200 hover:bg-white/10 hover:text-white",
+    isActive && "bg-white/15 text-white",
   );
 
 function SolutionsDropdown({ items }: { items: { label: string; href: string }[] }) {
@@ -34,15 +34,15 @@ function SolutionsDropdown({ items }: { items: { label: string; href: string }[]
         <DropdownMenu.Content
           align="start"
           sideOffset={10}
-          className="z-50 w-52 rounded-2xl border border-white/60 bg-white/95 p-1.5 shadow-soft-lg backdrop-blur-2xl"
+          className="z-50 w-52 rounded-2xl border border-white/20 bg-sky-deep/90 p-1.5 shadow-soft-lg backdrop-blur-2xl"
         >
           {items.map((item) => (
             <DropdownMenu.Item key={item.href} asChild className="outline-none">
               <Link
                 to={item.href}
                 className={cn(
-                  "block cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium text-navy/80 hover:bg-navy/5 hover:text-navy",
-                  pathname === item.href && "bg-navy/8 text-navy",
+                  "block cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white",
+                  pathname === item.href && "bg-white/15 text-white",
                 )}
               >
                 {item.label}
@@ -58,22 +58,23 @@ function SolutionsDropdown({ items }: { items: { label: string; href: string }[]
 export function Header() {
   const scrolled = useScrolled();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const phone = COMPANY_PHONE_NUMBERS[0];
 
   return (
     <header
-      className={cn(
-        "sticky top-0 z-40 h-[72px] transition-all duration-300 md:h-20",
-        scrolled
-          ? "border-b border-border bg-surface/90 shadow-soft backdrop-blur-md"
-          : "border-b border-transparent bg-transparent",
-      )}
+      className="sticky top-3 z-40 -mb-[76px] px-3 sm:-mb-[84px] sm:px-5 lg:px-8"
     >
-      <Container className="flex h-full items-center justify-between">
+      <div
+        className={cn(
+          "glass-blue mx-auto flex h-[64px] w-full max-w-[1280px] items-center justify-between rounded-full pr-2 pl-5 text-white transition-shadow duration-300 sm:h-[72px] sm:pl-7",
+          scrolled ? "shadow-soft-lg" : "shadow-none",
+        )}
+      >
         <Link to={ROUTES.home} className="shrink-0" aria-label="GK India SolarTech home">
-          <Logo />
+          <Logo variant="light" />
         </Link>
 
-        <nav className="hidden items-center gap-1 xl:flex" aria-label="Primary">
+        <nav className="hidden items-center gap-0.5 xl:flex" aria-label="Primary">
           {mainNavLinks.map((entry) =>
             entry.type === "dropdown" ? (
               <SolutionsDropdown key={entry.label} items={entry.items} />
@@ -85,18 +86,21 @@ export function Header() {
           )}
         </nav>
 
-        <div className="flex items-center gap-3">
-          <div className="hidden items-center gap-1.5 xl:flex">
+        <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-1.5 xl:flex [&_button]:text-white [&_button]:hover:text-white/80">
             <HeaderAuthLinks variant="desktop" />
           </div>
 
-          <Button asChild size="md" className="hidden xl:inline-flex">
-            <Link to={ROUTES.solarEstimate}>Get Free Solar Estimate</Link>
+          <Button asChild variant="white" size="md" className="hidden h-12 px-6 xl:inline-flex">
+            <a href={phone.href}>
+              <Phone className="h-4 w-4" aria-hidden="true" />
+              Call us: {phone.display}
+            </a>
           </Button>
 
           <button
             type="button"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-navy hover:bg-navy/5 xl:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-white hover:bg-white/10 xl:hidden"
             aria-label="Open menu"
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen(true)}
@@ -104,7 +108,7 @@ export function Header() {
             <Menu className="h-6 w-6" />
           </button>
         </div>
-      </Container>
+      </div>
 
       <MobileMenu open={mobileOpen} onOpenChange={setMobileOpen} />
     </header>

@@ -10,6 +10,7 @@ export interface SolutionCardData {
   description: string;
   benefits: string[];
   href: string;
+  image: string;
 }
 
 export const solutionCards: SolutionCardData[] = [
@@ -20,6 +21,7 @@ export const solutionCards: SolutionCardData[] = [
     description: "Solar solutions designed for homes and rooftops.",
     benefits: ["Reduced electricity expenses", "Rooftop installation", "Subsidy assistance"],
     href: ROUTES.residentialSolar,
+    image: "/images/installer.jpg",
   },
   {
     id: "commercial",
@@ -28,6 +30,7 @@ export const solutionCards: SolutionCardData[] = [
     description: "Solar solutions for businesses and commercial buildings.",
     benefits: ["Lower operating costs", "Scalable system design", "Professional EPC support"],
     href: ROUTES.commercialSolar,
+    image: "/images/commercial.jpg",
   },
   {
     id: "industrial",
@@ -36,6 +39,7 @@ export const solutionCards: SolutionCardData[] = [
     description: "Large-scale solar solutions for industrial requirements.",
     benefits: ["Large-scale capacity", "Dedicated project management", "Installation support"],
     href: ROUTES.industrialSolar,
+    image: "/images/industrial.jpg",
   },
 ];
 

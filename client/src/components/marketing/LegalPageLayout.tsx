@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
+import { BannerStrip } from "@/components/marketing/kit/BannerStrip";
 import { Container } from "@/components/layout/Container";
 import { Card } from "@/components/ui/Card";
 
@@ -12,9 +13,10 @@ interface LegalPageLayoutProps {
 /** Shared shell for the legal placeholder pages — plain, readable article typography rather than the marketing look. */
 export function LegalPageLayout({ title, intro, children }: LegalPageLayoutProps) {
   return (
-    <section className="py-16 sm:py-24">
+    <section className="relative isolate pt-44 pb-16 sm:pt-52 sm:pb-24">
+      <BannerStrip />
       <Container className="max-w-3xl">
-        <h1 className="text-3xl font-bold text-navy sm:text-4xl">{title}</h1>
+        <h1 className="font-serif text-4xl font-medium text-navy sm:text-5xl">{title}</h1>
         <p className="mt-3 text-sm text-muted-foreground">{intro}</p>
 
         <Card className="mt-8 flex gap-3 border-warning/30 bg-warning/8 p-4">

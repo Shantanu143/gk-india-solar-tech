@@ -1,10 +1,17 @@
 import { ClipboardCheck, FileCheck2, Gauge, Zap, ZapOff } from "lucide-react";
-import { Container } from "@/components/layout/Container";
+import { Link } from "react-router-dom";
 import { Seo } from "@/components/layout/Seo";
 import { CTASection } from "@/components/marketing/CTASection";
 import { FAQSection } from "@/components/marketing/FAQSection";
-import { Reveal } from "@/components/ui/Reveal";
-import { SectionHeading } from "@/components/ui/SectionHeading";
+
+import { PageHero } from "@/components/marketing/kit/PageHero";
+
+import { Section } from "@/components/marketing/kit/Section";
+import { SplitFeature } from "@/components/marketing/kit/SplitFeature";
+
+import { StepsGrid } from "@/components/marketing/kit/StepsGrid";
+import { Button } from "@/components/ui/Button";
+
 import { ROUTES } from "@/constant/routes";
 
 const NET_METERING_STEPS = [
@@ -45,53 +52,43 @@ export function NetMetering() {
         description="GK India SolarTech assists customers through the net-metering process required to connect a solar installation to the grid."
         path="/net-metering"
       />
-      <section className="py-16 sm:py-20">
-        <Container className="flex flex-col items-center text-center">
-          <Reveal className="flex flex-col items-center">
-            <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-navy/8 text-navy">
-              <Zap className="h-7 w-7" aria-hidden="true" />
-            </span>
-            <span className="mt-5 text-xs font-bold tracking-[0.14em] text-orange uppercase">Net Metering</span>
-            <h1 className="mt-3 max-w-2xl text-3xl font-bold text-navy sm:text-4xl">
-              Get Support With Net Metering
-            </h1>
-            <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Net metering lets your solar system export surplus electricity to the grid and
-              credits it against your usage. Our team assists customers through this process from
-              application to commissioning.
-            </p>
-          </Reveal>
-        </Container>
-      </section>
+      <PageHero
+        eyebrow="Net Metering"
+        title="Get Support With Net Metering"
+        description="Net metering lets your solar system export surplus electricity to the grid and credits it against your usage. Our team assists you from application to commissioning."
+        image="/images/wind.jpg"
+        chips={[
+          { icon: ClipboardCheck, label: "We file the application" },
+          { icon: Gauge, label: "Bi-directional meter" },
+          { icon: Zap, label: "Export surplus power" },
+        ]}
+        actions={
+          <Button asChild variant="white" size="lg">
+            <Link to={ROUTES.solarEstimate}>Get Free Solar Estimate</Link>
+          </Button>
+        }
+      />
 
-      <section className="bg-surface py-16 sm:py-20">
-        <Container className="flex flex-col items-center">
-          <SectionHeading eyebrow="The Process" title="How Net Metering Works" />
-          <ol className="mt-12 grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
-            {NET_METERING_STEPS.map((step, i) => (
-              <Reveal key={step.title} delay={i * 0.06}>
-                <li className="flex h-full flex-col items-center rounded-xl border border-border bg-surface p-5 text-center shadow-soft">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-navy text-xs font-bold text-white">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <step.icon className="mt-3 h-5 w-5 text-orange" aria-hidden="true" />
-                  <h3 className="mt-2 text-sm font-bold text-navy">{step.title}</h3>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{step.description}</p>
-                </li>
-              </Reveal>
-            ))}
-          </ol>
-        </Container>
-      </section>
+      <Section tone="surface" eyebrow="The Process" title="How Net Metering Works">
+        <StepsGrid
+          columns={5}
+          steps={NET_METERING_STEPS.map((s) => ({ title: s.title, description: s.description, icon: s.icon }))}
+        />
+      </Section>
 
-      <section className="py-16 sm:py-20">
-        <Container className="flex flex-col items-center">
-          <SectionHeading eyebrow="FAQ" title="Common Questions" />
-          <div className="mt-10 w-full">
-            <FAQSection items={FAQ_ITEMS} />
-          </div>
-        </Container>
-      </section>
+      <SplitFeature
+        eyebrow="Why It Matters"
+        title="Turn Surplus Sunshine Into Bill Credits"
+        description="On sunny days your system may generate more than you use. With net metering, that extra power flows to the grid and is credited against your consumption — helping lower your overall bill."
+        bullets={["Credits for exported units", "Lower net electricity bill", "No battery needed for grid-tied systems"]}
+        image="/images/offshore-wind.jpg"
+        imageAlt="Wind and solar feeding the grid"
+        badge={{ icon: Zap, value: "Grid-tied", label: "Export & earn credits" }}
+      />
+
+      <Section tone="muted" eyebrow="FAQ" title="Common Questions">
+        <FAQSection items={FAQ_ITEMS} />
+      </Section>
 
       <CTASection
         heading="Ready To Get Started?"

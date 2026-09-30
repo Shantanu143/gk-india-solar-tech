@@ -15,6 +15,10 @@ const buttonVariants = cva(
           "border border-navy/25 text-navy bg-transparent hover:bg-navy/5 hover:-translate-y-0.5 active:translate-y-0",
         "outline-light":
           "border border-white/35 text-white bg-transparent hover:bg-white/10 hover:-translate-y-0.5 active:translate-y-0",
+        white:
+          "bg-white text-navy shadow-soft hover:bg-white/90 hover:-translate-y-0.5 active:translate-y-0",
+        glass:
+          "glass text-white hover:bg-white/20 hover:-translate-y-0.5 active:translate-y-0",
         tertiary: "text-navy underline-offset-4 hover:text-orange hover:underline",
         ghost: "text-navy hover:bg-navy/5",
       },

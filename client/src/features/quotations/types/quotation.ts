@@ -35,7 +35,9 @@ export interface Quotation {
   status: QuotationStatus;
   notes?: string;
   preparedBy: string;
+  gstRatePercent: number;
   sentAt?: string;
+  whatsappSentAt?: string;
   respondedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -48,3 +50,11 @@ export const QUOTATION_STATUS_LABEL: Record<QuotationStatus, string> = {
   REJECTED: "Rejected",
   EXPIRED: "Expired",
 };
+
+export interface SendQuotationResult {
+  quotation: Quotation;
+  /** wa.me click-to-chat link with the customer's number and a ready-made message. */
+  whatsappLink: string;
+  /** Private link to the PDF that the message contains. */
+  pdfUrl: string;
+}

@@ -69,7 +69,8 @@ export function Commercial() {
         eyebrow="Commercial Solar"
         title="Smarter Energy For Your Business"
         description="Commercial solar can help your business reduce operating costs and move toward cleaner, more efficient energy usage — with system design and installation managed end-to-end by our EPC team."
-        illustrationVariant="commercial"
+        heroImage="/images/office-tower.jpg"
+        sideImage="/images/commercial.jpg"
         benefits={BENEFITS}
         highlights={HIGHLIGHTS}
         faqItems={FAQ_ITEMS}

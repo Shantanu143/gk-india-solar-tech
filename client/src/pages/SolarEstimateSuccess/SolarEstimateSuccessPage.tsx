@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { BannerStrip } from "@/components/marketing/kit/BannerStrip";
 import { Container } from "@/components/layout/Container";
 import { Seo } from "@/components/layout/Seo";
 import { LeadSuccess } from "@/components/leads/LeadSuccess";
@@ -24,7 +25,8 @@ export function SolarEstimateSuccessPage() {
   const state = isSuccessState(location.state) ? location.state : null;
 
   return (
-    <section className="py-14 sm:py-20">
+    <section className="relative isolate pt-44 pb-14 sm:pt-52">
+      <BannerStrip />
       <Seo
         title="Solar Estimate Request Received | GK India SolarTech"
         description="Your solar estimate request has been received."

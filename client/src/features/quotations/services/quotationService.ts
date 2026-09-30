@@ -1,6 +1,6 @@
 import { apiRequest, apiRequestBlob } from "@/services/apiClient";
 import type { PaginatedResult } from "@/features/crm/types/api";
-import type { Quotation, QuotationItem, QuotationStatus } from "@/features/quotations/types/quotation";
+import type { Quotation, QuotationItem, QuotationStatus, SendQuotationResult } from "@/features/quotations/types/quotation";
 
 export interface GetQuotationsParams {
   status?: QuotationStatus;
@@ -45,9 +45,8 @@ export async function updateQuotationItems(payload: UpdateQuotationItemsPayload)
   return quotation;
 }
 
-export async function sendQuotation(id: string): Promise<Quotation> {
-  const { quotation } = await apiRequest<{ quotation: Quotation }>(`/quotations/${id}/send`, { method: "POST" });
-  return quotation;
+export async function sendQuotation(id: string): Promise<SendQuotationResult> {
+  return apiRequest<SendQuotationResult>(`/quotations/${id}/send`, { method: "POST" });
 }
 
 export async function acceptQuotation(id: string): Promise<Quotation> {
@@ -73,4 +72,26 @@ export async function downloadQuotationPdf(quotation: Quotation): Promise<void> 
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+/**
+ * Mobile-friendly alternative: hands the actual PDF file to the phone's share sheet so it can go
+ * straight into a WhatsApp chat as an attachment. Returns false when the browser can't share files
+ * (most desktops), so callers can fall back to the message-with-link flow.
+ */
+export async function shareQuotationPdfFile(quotation: Quotation, customerName: string): Promise<boolean> {
+  const blob = await apiRequestBlob(`/quotations/${quotation.id}/pdf`);
+  const file = new File([blob], `${quotation.quotationNumber}.pdf`, { type: "application/pdf" });
+  if (!navigator.canShare?.({ files: [file] })) return false;
+  try {
+    await navigator.share({
+      files: [file],
+      title: `Solar quotation ${quotation.quotationNumber}`,
+      text: `Hello ${customerName}, here is your GK India SolarTech solar quotation ${quotation.quotationNumber}.`,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") return true; // user closed the sheet
+    throw error;
+  }
+  return true;
 }

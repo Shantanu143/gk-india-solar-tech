@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
+import { ParallaxImage } from "@/components/motion/ParallaxImage";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
 import { Container } from "@/components/layout/Container";
@@ -29,32 +30,26 @@ export function CTASection({
   className,
 }: CTASectionProps) {
   return (
-    <section className={cn("relative overflow-hidden bg-navy-dark py-20 sm:py-24", className)}>
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-32 right-[-10%] h-96 w-96 rounded-full bg-orange/25 blur-[110px]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute bottom-[-20%] left-[-5%] h-72 w-72 rounded-full bg-green/20 blur-[100px]"
-      />
+    <section className={cn("relative isolate overflow-hidden bg-sky-deep py-20 sm:py-28", className)}>
+      <ParallaxImage src="/images/field-sky.jpg" alt="" strength={50} className="absolute inset-0 -z-20" />
+      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-sky-deep/70" />
 
       <Container className="relative flex flex-col items-center text-center">
         <Reveal className="flex flex-col items-center">
           {eyebrow && (
-            <span className="text-xs font-bold tracking-[0.14em] text-orange-light uppercase">{eyebrow}</span>
+            <span className="text-xs font-bold tracking-[0.14em] text-white/80 uppercase">{eyebrow}</span>
           )}
-          <h2 className="mt-3 max-w-2xl text-3xl font-bold text-white sm:text-4xl">{heading}</h2>
+          <h2 className="mt-3 max-w-2xl font-serif text-4xl font-medium text-white sm:text-5xl">{heading}</h2>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-white/65 sm:text-lg">{description}</p>
 
           {children && <div className="mt-8 w-full">{children}</div>}
 
           <div className="mt-9 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            <Button asChild size="lg">
+            <Button asChild variant="white" size="lg">
               <Link to={primaryHref}>{primaryLabel}</Link>
             </Button>
             {secondaryLabel && secondaryHref && (
-              <Button asChild variant="outline-light" size="lg">
+              <Button asChild variant="glass" size="lg">
                 <Link to={secondaryHref}>{secondaryLabel}</Link>
               </Button>
             )}
