@@ -62,4 +62,9 @@ export const productRepository = {
   updateById(id: string, updates: UpdateProductInput) {
     return ProductModel.findByIdAndUpdate(id, updates, { new: true });
   },
+
+  /** Raw `$inc`, bypassing schema validation on purpose — see the `stockQuantity` doc comment on `ProductAttrs`. */
+  decrementStock(id: string, amount: number) {
+    return ProductModel.findByIdAndUpdate(id, { $inc: { stockQuantity: -amount } }, { new: true });
+  },
 };

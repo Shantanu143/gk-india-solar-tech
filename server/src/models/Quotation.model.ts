@@ -34,7 +34,11 @@ export interface QuotationAttrs {
   status: QuotationStatus;
   notes?: string;
   preparedBy: string;
+  gstRatePercent: number;
+  /** Unguessable token for the public, login-free PDF link sent to the customer. */
+  shareToken?: string;
   sentAt?: Date;
+  whatsappSentAt?: Date;
   respondedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -75,7 +79,10 @@ const quotationSchema = new Schema<QuotationAttrs>(
     status: { type: String, enum: QUOTATION_STATUSES, required: true, default: "DRAFT" },
     notes: { type: String, trim: true },
     preparedBy: { type: String, required: true },
+    gstRatePercent: { type: Number, required: true, default: 8.9 },
+    shareToken: { type: String, index: true, sparse: true },
     sentAt: { type: Date },
+    whatsappSentAt: { type: Date },
     respondedAt: { type: Date },
   },
   { timestamps: true },

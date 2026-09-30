@@ -1,5 +1,6 @@
 import type { Types } from "mongoose";
 import { CustomerModel, type CustomerAttrs } from "../models/Customer.model";
+import { ProjectModel } from "../models/Project.model";
 
 export interface CreateCustomerInput extends Omit<CustomerAttrs, "createdAt" | "updatedAt" | "lead" | "assignedEmployeeId"> {
   lead: string | Types.ObjectId;
@@ -27,9 +28,17 @@ function buildFilterQuery(filters: CustomerFilters): Record<string, unknown> {
 }
 
 export const customerRepository = {
+  /**
+   * A Customer row is created (and a Project starts tracking) the moment a quotation is accepted —
+   * that's "deal won," not "delivered." The Customers list is meant to represent people who now own
+   * a working system, so it only surfaces rows whose linked Project has actually reached COMPLETED;
+   * someone mid-installation still shows up on the Projects page in the meantime.
+   */
   async list(params: ListCustomersParams) {
     const { page, pageSize, ...filters } = params;
     const query = buildFilterQuery(filters);
+    const installedCustomerIds = await ProjectModel.find({ status: "COMPLETED" }).distinct("customer");
+    query._id = { $in: installedCustomerIds };
     const [items, total] = await Promise.all([
       CustomerModel.find(query)
         .sort({ createdAt: -1 })

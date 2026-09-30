@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 import { projectRepository, type ProjectFilters } from "../repository/project.repository";
 import { leadRepository } from "../repository/lead.repository";
 import { quotationRepository } from "../repository/quotation.repository";
+import { productRepository } from "../repository/product.repository";
 import { activityService } from "./activity.service";
 import { commissionService } from "./commission.service";
 import { notificationService } from "./notification.service";
@@ -77,16 +78,29 @@ export const projectService = {
       description: `Project status changed to ${PROJECT_STATUS_LABEL[input.status]}`,
     });
 
-    // Project completion is the "ON_PROJECT_COMPLETED" commission trigger for a partner-sourced
-    // lead — evaluateForLead is idempotent, so a lead already paid out on booking is a safe no-op.
     if (input.status === "COMPLETED") {
+      const quotation = await quotationRepository.findById(project.quotation.toString());
+
+      // Deduct whatever was actually quoted (and is linked to a catalog product) from stock —
+      // installation just consumed it. Items without a `productId` (ad-hoc/manual line items) have
+      // nothing to deduct against. Allowed to go negative — see `ProductAttrs.stockQuantity`.
+      const installedItems = quotation?.items.filter((item) => item.productId) ?? [];
+      if (installedItems.length > 0) {
+        await Promise.all(installedItems.map((item) => productRepository.decrementStock(item.productId!.toString(), item.quantity)));
+        await activityService.log({
+          leadId: project.lead.toString(),
+          type: "STATUS_CHANGED",
+          actorName: input.actorName,
+          description: `Installation completed — stock deducted for ${installedItems.length} item(s).`,
+        });
+      }
+
+      // Project completion is the "ON_PROJECT_COMPLETED" commission trigger for a partner-sourced
+      // lead — evaluateForLead is idempotent, so a lead already paid out on booking is a safe no-op.
       const lead = await leadRepository.findById(project.lead.toString());
-      if (lead?.partnerId) {
-        const [partner, quotation] = await Promise.all([
-          PartnerModel.findById(lead.partnerId),
-          quotationRepository.findById(project.quotation.toString()),
-        ]);
-        if (partner && quotation) {
+      if (lead?.partnerId && quotation) {
+        const partner = await PartnerModel.findById(lead.partnerId);
+        if (partner) {
           await commissionService.evaluateForLead({
             leadId: project.lead.toString(),
             partnerId: lead.partnerId.toString(),

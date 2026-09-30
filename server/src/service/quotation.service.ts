@@ -10,6 +10,13 @@ import { projectService } from "./project.service";
 import { commissionService } from "./commission.service";
 import { PartnerModel } from "../models/Partner.model";
 import { ApiError } from "../util/ApiError";
+import crypto from "node:crypto";
+import { env } from "../config/env";
+import { formatDateLabel } from "../util/dateLabels";
+import { DEFAULT_GST_RATE_PERCENT, PRICE_SPLIT, systemPriceFor } from "../config/company";
+import { surveyRepository } from "../repository/survey.repository";
+import { renderQuotationPdfBuffer } from "../util/renderQuotationPdf";
+import { buildClickToChatLink, buildQuotationMessage } from "./whatsapp.service";
 import { toPublicQuotation, type PublicQuotation } from "../util/serializeQuotation";
 import { calculateEmi, calculateSubsidy, LOAN_CONFIG } from "../util/emiCalculator";
 import type { FinalSolarConfigurationDocument } from "../models/FinalSolarConfiguration.model";
@@ -56,11 +63,32 @@ async function buildItemsFromFinalConfiguration(config: FinalSolarConfigurationD
   const panelMatch = findBestMatch(panels, "wattage", String(config.panelWattage));
   const inverterMatch = findBestMatch(inverters, "capacityKw", String(config.inverterCapacityKw));
 
-  return [
+  const items = [
     makeItem("PANEL", `${config.panelModel} Solar Panel`, config.numberOfPanels, panelMatch),
     makeItem("INVERTER", `${config.inverterCapacityKw} kW Solar Inverter`, 1, inverterMatch),
     makeItem("STRUCTURE", config.structureType, 1, structures[0]),
   ];
+  if (items.reduce((sum, item) => sum + item.amount, 0) > 0) return items;
+
+  // The catalog has no prices yet — fall back to the standard rooftop price list so the draft is
+  // still a realistic starting point. The preparer can edit every line before sending.
+  const total = systemPriceFor(config.systemCapacityKw);
+  const priced = (item: QuotationItemInput, share: number): QuotationItemInput => {
+    const amount = Math.round(total * share);
+    return { ...item, unitPrice: Math.round(amount / item.quantity), amount: Math.round(amount / item.quantity) * item.quantity };
+  };
+  const [panel, inverter, structure] = items as [QuotationItemInput, QuotationItemInput, QuotationItemInput];
+  const bos: QuotationItemInput = {
+    productId: null,
+    description: "Cables, protection, earthing, net-metering, installation & commissioning",
+    category: "ACCESSORY",
+    quantity: 1,
+    unitPrice: 0,
+    amount: 0,
+  };
+  const partial = [priced(panel, PRICE_SPLIT.panels), priced(inverter, PRICE_SPLIT.inverter), priced(structure, PRICE_SPLIT.structure)];
+  const remainder = total - partial.reduce((sum, item) => sum + item.amount, 0);
+  return [...partial, { ...bos, unitPrice: remainder, amount: remainder }];
 }
 
 function computeTotals(items: QuotationItemInput[], subsidyAmount: number, discountAmount: number) {
@@ -123,6 +151,7 @@ export const quotationService = {
       discountAmount: 0,
       totalAmount,
       emiEstimate,
+      gstRatePercent: DEFAULT_GST_RATE_PERCENT,
       validUntil: addDaysIso(30),
       status: "DRAFT",
       preparedBy: input.actorName,
@@ -173,24 +202,85 @@ export const quotationService = {
     return toPublicQuotation(quotation);
   },
 
-  async sendQuotation(input: { id: string; actorName: string }): Promise<PublicQuotation> {
+  /** Builds the PDF for a quotation with everything the template needs (final config + survey). */
+  async buildPdf(quotationId: string): Promise<{ pdf: Buffer; quotation: PublicQuotation; filename: string }> {
+    const doc = await quotationRepository.findById(quotationId);
+    if (!doc) throw ApiError.notFound("Quotation not found.");
+    const quotation = toPublicQuotation(doc);
+    const lead = await leadRepository.findById(quotation.leadId);
+    if (!lead) throw ApiError.notFound("Lead not found.");
+    const finalConfig = await finalConfigurationRepository.findByLeadId(quotation.leadId);
+    const survey = finalConfig ? await surveyRepository.findById(finalConfig.survey.toString()) : null;
+    const pdf = await renderQuotationPdfBuffer(quotation, lead, { finalConfig, survey });
+    return { pdf, quotation, filename: `${quotation.quotationNumber}.pdf` };
+  },
+
+  async getPdfByShareToken(token: string): Promise<{ pdf: Buffer; filename: string }> {
+    const doc = await quotationRepository.findByShareToken(token);
+    if (!doc) throw ApiError.notFound("This quotation link is invalid or has expired.");
+    // Links stay live for a week past the quote's own validity so a late "let me check" still works.
+    const expires = new Date(`${doc.validUntil}T23:59:59`);
+    expires.setDate(expires.getDate() + 7);
+    if (Date.now() > expires.getTime()) throw ApiError.notFound("This quotation link is invalid or has expired.");
+    const { pdf, filename } = await quotationService.buildPdf(doc._id.toString());
+    return { pdf, filename };
+  },
+
+  /**
+   * Marks a draft as sent (re-sending an already-sent quotation is allowed) and returns a WhatsApp
+   * click-to-chat link for the customer with a ready-made message containing the PDF link.
+   */
+  async sendQuotation(input: {
+    id: string;
+    actorName: string;
+    requestBaseUrl: string;
+  }): Promise<{ quotation: PublicQuotation; whatsappLink: string; pdfUrl: string }> {
     const existing = await quotationRepository.findById(input.id);
     if (!existing) throw ApiError.notFound("Quotation not found.");
-    if (existing.status !== "DRAFT") throw ApiError.badRequest("Only draft quotations can be sent.");
+    if (existing.status !== "DRAFT" && existing.status !== "SENT") {
+      throw ApiError.badRequest("Only draft or sent quotations can be sent.");
+    }
+    const lead = await leadRepository.findById(existing.lead.toString());
+    if (!lead) throw ApiError.notFound("Lead not found.");
+    const wasDraft = existing.status === "DRAFT";
 
-    const quotation = await quotationRepository.updateById(input.id, { status: "SENT", sentAt: new Date() });
-    if (!quotation) throw ApiError.notFound("Quotation not found.");
+    const shareToken = existing.shareToken ?? crypto.randomBytes(24).toString("hex");
+    const finalConfig = await finalConfigurationRepository.findByLeadId(lead._id.toString());
+    const baseUrl = (env.PUBLIC_API_URL ?? input.requestBaseUrl).replace(/\/$/, "");
+    const pdfUrl = `${baseUrl}/api/public/quotations/${shareToken}/pdf`;
 
-    const leadId = quotation.lead.toString();
-    await leadService.updateLeadStatus({ leadId, status: "QUOTATION_SENT", actorName: input.actorName });
+    const now = new Date();
+    const updated = await quotationRepository.updateById(input.id, {
+      shareToken,
+      whatsappSentAt: now,
+      ...(wasDraft ? { status: "SENT" as const, sentAt: now } : {}),
+    });
+    if (!updated) throw ApiError.notFound("Quotation not found.");
+
+    const leadId = updated.lead.toString();
+    if (wasDraft) await leadService.updateLeadStatus({ leadId, status: "QUOTATION_SENT", actorName: input.actorName });
     await activityService.log({
       leadId,
       type: "QUOTATION_SENT",
       actorName: input.actorName,
-      description: `Quotation ${quotation.quotationNumber} sent to customer`,
+      description: `Quotation ${updated.quotationNumber} sent to customer on WhatsApp`,
     });
 
-    return toPublicQuotation(quotation);
+    const message = buildQuotationMessage({
+      customerName: lead.customer.fullName,
+      quotationNumber: updated.quotationNumber,
+      systemSizeKw: finalConfig?.systemCapacityKw ?? lead.solarRecommendation.recommendedCapacity,
+      netEffectivePrice: updated.totalAmount,
+      validUntilLabel: formatDateLabel(updated.validUntil),
+      pdfUrl,
+      preparedBy: input.actorName,
+    });
+
+    return {
+      quotation: toPublicQuotation(updated),
+      whatsappLink: buildClickToChatLink(lead.customer.whatsapp || lead.customer.mobile, message),
+      pdfUrl,
+    };
   },
 
   async acceptQuotation(input: { id: string; actorName: string }): Promise<PublicQuotation> {

@@ -10,6 +10,9 @@ const envSchema = z.object({
   JWT_ACCESS_SECRET: z.string().min(1, "JWT_ACCESS_SECRET is required."),
   JWT_ACCESS_EXPIRES_IN: z.string().default("15m"),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().default(30),
+  // Public base URL of this API (no trailing slash), used for the customer-facing PDF link, e.g. "https://api.gkindiasolartech.in".
+  // Optional: when unset the link is built from the incoming request's host.
+  PUBLIC_API_URL: z.string().optional(),
 });
 
 const parsed = envSchema.parse(process.env);

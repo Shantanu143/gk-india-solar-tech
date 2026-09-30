@@ -13,10 +13,12 @@ import projectRoutes from "./project.routes";
 import materialRoutes from "./material.routes";
 import partnerRoutes from "./partner.routes";
 import partnerLeadRoutes from "./partnerLead.routes";
+import publicQuotationRoutes from "./publicQuotation.routes";
 import commissionRoutes from "./commission.routes";
 
 const router = Router();
 
+router.use("/public", publicQuotationRoutes);
 router.use("/auth", authRoutes);
 router.use("/employees", employeeRoutes);
 router.use("/leads", leadRoutes);

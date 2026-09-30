@@ -19,6 +19,7 @@ export const createProductSchema = z.object({
   specs: z.record(z.string(), z.string()).optional(),
   description: z.string().trim().optional(),
   status: z.enum(PRODUCT_STATUSES).optional(),
+  stockQuantity: z.coerce.number().int().min(0, "Stock can't be negative.").optional(),
 });
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 
@@ -30,6 +31,7 @@ export const updateProductSchema = z.object({
   unit: z.enum(PRODUCT_UNITS).optional(),
   specs: z.record(z.string(), z.string()).optional(),
   description: z.string().trim().optional(),
+  stockQuantity: z.coerce.number().int().min(0, "Stock can't be negative.").optional(),
 });
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 

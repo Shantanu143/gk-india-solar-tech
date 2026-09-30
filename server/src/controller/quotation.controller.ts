@@ -1,10 +1,7 @@
 import { quotationService } from "../service/quotation.service";
-import { leadRepository } from "../repository/lead.repository";
 import { asyncHandler } from "../util/asyncHandler";
-import { ApiError } from "../util/ApiError";
 import { can } from "../util/permissions";
 import { listQuotationsQuerySchema } from "../validation/quotation.validation";
-import { renderQuotationPdf } from "../util/renderQuotationPdf";
 
 export const quotationController = {
   list: asyncHandler(async (req, res) => {
@@ -35,8 +32,12 @@ export const quotationController = {
   }),
 
   send: asyncHandler(async (req, res) => {
-    const quotation = await quotationService.sendQuotation({ id: req.params.id, actorName: req.user!.name });
-    res.json({ quotation });
+    const result = await quotationService.sendQuotation({
+      id: req.params.id,
+      actorName: req.user!.name,
+      requestBaseUrl: `${req.protocol}://${req.get("host")}`,
+    });
+    res.json(result);
   }),
 
   accept: asyncHandler(async (req, res) => {
@@ -50,12 +51,18 @@ export const quotationController = {
   }),
 
   pdf: asyncHandler(async (req, res) => {
-    const quotation = await quotationService.getQuotation(req.params.id);
-    const lead = await leadRepository.findById(quotation.leadId);
-    if (!lead) throw ApiError.notFound("Lead not found.");
-
+    const { pdf, filename } = await quotationService.buildPdf(req.params.id);
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${quotation.quotationNumber}.pdf"`);
-    renderQuotationPdf(quotation, lead).pipe(res);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(pdf);
+  }),
+
+  /** Login-free download for the customer, addressed by an unguessable share token. */
+  publicPdf: asyncHandler(async (req, res) => {
+    const { pdf, filename } = await quotationService.getPdfByShareToken(req.params.token);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+    res.setHeader("Cache-Control", "private, no-store");
+    res.send(pdf);
   }),
 };

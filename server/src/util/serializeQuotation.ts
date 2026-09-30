@@ -24,6 +24,8 @@ export function toPublicQuotation(quotation: QuotationDocument) {
     status: quotation.status,
     notes: quotation.notes,
     preparedBy: quotation.preparedBy,
+    gstRatePercent: quotation.gstRatePercent ?? 8.9,
+    whatsappSentAt: quotation.whatsappSentAt ? quotation.whatsappSentAt.toISOString() : undefined,
     sentAt: quotation.sentAt ? quotation.sentAt.toISOString() : undefined,
     respondedAt: quotation.respondedAt ? quotation.respondedAt.toISOString() : undefined,
     createdAt: quotation.createdAt.toISOString(),

@@ -11,6 +11,7 @@ export function toPublicProduct(product: ProductDocument) {
     specs: product.specs,
     status: product.status,
     description: product.description,
+    stockQuantity: product.stockQuantity,
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
   };

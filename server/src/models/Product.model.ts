@@ -18,6 +18,12 @@ export interface ProductAttrs {
   specs?: Record<string, string>;
   status: ProductStatus;
   description?: string;
+  /**
+   * No `min` constraint deliberately — a completed installation decrements this via a raw `$inc`
+   * (see `productRepository.decrementStock`) regardless of what's on hand, so it can go negative as
+   * a "you're short, reorder" signal rather than blocking a real-world-already-finished install.
+   */
+  stockQuantity: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,6 +40,7 @@ const productSchema = new Schema<ProductAttrs>(
     specs: { type: Schema.Types.Mixed },
     status: { type: String, enum: PRODUCT_STATUSES, required: true, default: "ACTIVE" },
     description: { type: String, trim: true },
+    stockQuantity: { type: Number, required: true, default: 0 },
   },
   { timestamps: true },
 );

@@ -48,6 +48,10 @@ export const quotationRepository = {
     return QuotationModel.findById(id);
   },
 
+  findByShareToken(token: string) {
+    return QuotationModel.findOne({ shareToken: token });
+  },
+
   findByLeadId(leadId: string) {
     return QuotationModel.findOne({ lead: leadId });
   },
