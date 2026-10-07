@@ -10,7 +10,7 @@ export const COMPANY = {
   website: "www.gkindiasolartech.in",
   email: "support@gkindiasolartech.in",
   phones: ["+91 78409 84977", "+91 90966 57541"],
-  address: "Pune, Maharashtra, India",
+  address: "Mali Nagar, Near Ganpati Temple, Vadgaon Maval, District Pune – 412106, Maharashtra, India.",
 } as const;
 
 /** Blended GST on a rooftop solar supply + works contract. REVIEW with your CA. */

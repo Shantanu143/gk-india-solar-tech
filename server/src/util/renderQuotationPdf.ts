@@ -64,6 +64,23 @@ const f = {
   bold: (d: Doc) => d.font("B"),
 };
 
+/**
+ * Shrinks (then ellipsises) a single-line string so it always fits `width`, using the doc's current
+ * font. Customer names are free text — a long one must never run into the elements beside it.
+ */
+function fitLine(doc: Doc, text: string, width: number, maxSize: number, minSize: number): { text: string; size: number } {
+  let size = maxSize;
+  doc.fontSize(size);
+  while (size > minSize && doc.widthOfString(text) > width) {
+    size -= 0.5;
+    doc.fontSize(size);
+  }
+  if (doc.widthOfString(text) <= width) return { text, size };
+  let clipped = text;
+  while (clipped.length > 1 && doc.widthOfString(`${clipped}…`) > width) clipped = clipped.slice(0, -1);
+  return { text: `${clipped.trimEnd()}…`, size };
+}
+
 function pageBackground(doc: Doc, color = PAGE_BG) {
   doc.rect(0, 0, W, H).fill(color);
 }
@@ -181,7 +198,9 @@ function drawCover(doc: Doc, q: PublicQuotation, lead: LeadDocument, kw: number)
   f.bold(doc).fontSize(38).fillColor("#FFFFFF").text("Power your home", M, 222, { width: CW });
   f.bold(doc).fontSize(38).fillColor("#FFFFFF").text("with the sun.", M, 266, { width: CW });
   f.reg(doc).fontSize(12).fillColor("#E3EDFB").text(`Prepared exclusively for`, M, 330);
-  f.bold(doc).fontSize(24).fillColor("#FFFFFF").text(lead.customer.fullName, M, 348, { width: CW });
+  // Name sits left of the "system size" pill (170pt wide + gap), so it gets the remaining width on one line.
+  const coverName = fitLine(f.bold(doc), lead.customer.fullName, CW - 170 - 24, 24, 15);
+  f.bold(doc).fontSize(coverName.size).fillColor("#FFFFFF").text(coverName.text, M, 348 + (24 - coverName.size) / 2, { lineBreak: false });
   f.reg(doc).fontSize(11).fillColor("#D7E4F8").text(`${lead.location.city} · ${lead.location.pincode}`, M, 380);
 
   // system pill
@@ -230,7 +249,8 @@ function drawOffer(doc: Doc, q: PublicQuotation, lead: LeadDocument, ctx: Quotat
 
   // customer card
   card(doc, M, y, CW, 88);
-  f.bold(doc).fontSize(13).fillColor(TEXT).text(lead.customer.fullName, M + 18, y + 14);
+  const cardName = fitLine(f.bold(doc), lead.customer.fullName, CW - 222, 13, 9.5);
+  f.bold(doc).fontSize(cardName.size).fillColor(TEXT).text(cardName.text, M + 18, y + 14, { lineBreak: false });
   f.reg(doc).fontSize(9).fillColor(MUTED).text(`${lead.customer.mobile} · ${lead.location.city}, ${lead.location.pincode}`, M + 18, y + 33);
   f.reg(doc).fontSize(9).fillColor(MUTED).text(lead.customer.address, M + 18, y + 47, { width: CW - 220, height: 26 });
   const rx = M + CW - 190;

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Mail, MapPin, Phone } from "lucide-react";
-import { COMPANY_EMAIL, COMPANY_PHONE_NUMBERS } from "@/config/contact";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
+import { COMPANY_ADDRESS_LINES, COMPANY_EMAIL, COMPANY_PHONE_NUMBERS, getPhoneLink } from "@/config/contact";
 import { ROUTES } from "@/constant/routes";
 import { footerLinkGroups, legalLinks } from "@/data/navigation";
 import { Container } from "./Container";
@@ -41,13 +42,28 @@ export function Footer() {
             <ul className="mt-4 flex flex-col gap-3 text-sm text-white/55">
               <li className="flex items-start gap-2">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-white" aria-hidden="true" />
-                <span>Pune, Maharashtra, India</span>
+                <address className="not-italic">
+                  {COMPANY_ADDRESS_LINES.map((line) => (
+                    <span key={line} className="block">
+                      {line}
+                    </span>
+                  ))}
+                </address>
               </li>
               {COMPANY_PHONE_NUMBERS.map((phone) => (
                 <li key={phone.href} className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 shrink-0 text-white" aria-hidden="true" />
-                  <a href={phone.href} className="hover:text-white">
+                  {phone.whatsapp ? (
+                    <WhatsAppIcon className="h-4 w-4 shrink-0 text-[#25D366]" aria-hidden="true" />
+                  ) : (
+                    <Phone className="h-4 w-4 shrink-0 text-white" aria-hidden="true" />
+                  )}
+                  <a
+                    href={getPhoneLink(phone)}
+                    {...(phone.whatsapp && { target: "_blank", rel: "noreferrer" })}
+                    className="hover:text-white"
+                  >
                     {phone.display}
+                    {phone.whatsapp && <span className="sr-only"> (WhatsApp)</span>}
                   </a>
                 </li>
               ))}

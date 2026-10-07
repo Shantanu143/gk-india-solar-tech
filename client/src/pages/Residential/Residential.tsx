@@ -1,5 +1,6 @@
 import { Calculator, IndianRupee, Wrench, Zap } from "lucide-react";
 import { Seo } from "@/components/layout/Seo";
+import { SolarSystemGuide } from "@/components/marketing/SolarSystemGuide";
 import { SolutionDetailPage } from "@/components/marketing/SolutionDetailPage";
 
 const BENEFITS = [
@@ -38,7 +39,7 @@ const FAQ_ITEMS = [
   {
     question: "How much roof space do I need for a home solar system?",
     answer:
-      "Roof space requirements depend on your recommended system size and the panels used. Our team confirms exact requirements during your site survey.",
+      "With modern 500W–550W panels, you need roughly 80–100 sq. ft. of area per 1 kW — for example, about 240–300 sq. ft. for a 3 kW system. Our team confirms exact requirements during your site survey.",
   },
   {
     question: "Will solar work with my roof type?",
@@ -76,6 +77,7 @@ export function Residential() {
         faqItems={FAQ_ITEMS}
         finalCtaHeading="Ready To Power Your Home With Solar?"
         finalCtaDescription="Start with a free estimate to see what solar could look like for your home."
+        extraSections={<SolarSystemGuide />}
       />
     </>
   );

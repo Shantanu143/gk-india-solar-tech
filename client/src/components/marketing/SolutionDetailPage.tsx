@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { CalendarCheck, PhoneCall, Sun, type LucideIcon } from "lucide-react";
 import { Marquee } from "@/components/motion/Marquee";
@@ -31,6 +32,8 @@ interface SolutionDetailPageProps {
   faqItems: FaqItem[];
   finalCtaHeading: string;
   finalCtaDescription: string;
+  /** Optional page-specific sections rendered between "What You Can Expect" and "How It Works". */
+  extraSections?: ReactNode;
 }
 
 /** Shared shell for the Residential/Commercial/Industrial detail pages — same structure, different content. */
@@ -45,6 +48,7 @@ export function SolutionDetailPage({
   faqItems,
   finalCtaHeading,
   finalCtaDescription,
+  extraSections,
 }: SolutionDetailPageProps) {
   return (
     <>
@@ -103,6 +107,8 @@ export function SolutionDetailPage({
           ))}
         </div>
       </Section>
+
+      {extraSections}
 
       <Section
         eyebrow="How It Works"

@@ -12,11 +12,19 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Reveal } from "@/components/ui/Reveal";
 import { Textarea } from "@/components/ui/Textarea";
-import { COMPANY_EMAIL, COMPANY_PHONE_NUMBERS } from "@/config/contact";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
+import {
+  COMPANY_ADDRESS,
+  COMPANY_ADDRESS_LINES,
+  COMPANY_EMAIL,
+  COMPANY_LOCALITY,
+  COMPANY_PHONE_NUMBERS,
+  getPhoneLink,
+} from "@/config/contact";
 import { contactFormSchema, type ContactFormValues } from "@/schemas/contact.schema";
 import { submitContactInquiry } from "@/services/leadService";
 
-const MAP_EMBED_SRC = "https://www.google.com/maps?q=Pune,+Maharashtra,+India&output=embed";
+const MAP_EMBED_SRC = `https://www.google.com/maps?q=${encodeURIComponent(COMPANY_ADDRESS)}&output=embed`;
 
 export function Contact() {
   const {
@@ -68,11 +76,17 @@ export function Contact() {
                     {COMPANY_PHONE_NUMBERS.map((phone) => (
                       <a
                         key={phone.href}
-                        href={phone.href}
+                        href={getPhoneLink(phone)}
+                        {...(phone.whatsapp && { target: "_blank", rel: "noreferrer" })}
                         className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-sm transition-colors hover:bg-white/10"
                       >
-                        <Phone className="h-4 w-4 shrink-0 text-sky" aria-hidden="true" />
+                        {phone.whatsapp ? (
+                          <WhatsAppIcon className="h-4 w-4 shrink-0 text-[#25D366]" aria-hidden="true" />
+                        ) : (
+                          <Phone className="h-4 w-4 shrink-0 text-sky" aria-hidden="true" />
+                        )}
                         {phone.display}
+                        {phone.whatsapp && <span className="sr-only"> (WhatsApp)</span>}
                       </a>
                     ))}
                     <a
@@ -82,9 +96,9 @@ export function Contact() {
                       <Mail className="h-4 w-4 shrink-0 text-sky" aria-hidden="true" />
                       {COMPANY_EMAIL}
                     </a>
-                    <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-sm">
-                      <MapPin className="h-4 w-4 shrink-0 text-sky" aria-hidden="true" />
-                      Pune, Maharashtra, India
+                    <div className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-sm">
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-sky" aria-hidden="true" />
+                      <address className="not-italic">{COMPANY_ADDRESS}</address>
                     </div>
                   </div>
                 </div>
@@ -209,10 +223,16 @@ export function Contact() {
               </div>
               <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
                 <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-sky" aria-hidden="true" />
-                <div>
-                  <p className="text-sm font-semibold text-navy">Pune, Maharashtra, India</p>
-                  <p className="text-xs text-muted-foreground">Serving residential, commercial and industrial projects.</p>
-                </div>
+                <address className="not-italic">
+                  <p className="text-sm font-semibold text-navy">
+                    {COMPANY_ADDRESS_LINES.map((line) => (
+                      <span key={line} className="block">
+                        {line}
+                      </span>
+                    ))}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">Serving residential, commercial and industrial projects.</p>
+                </address>
               </div>
               <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
                 <Clock className="mt-0.5 h-5 w-5 shrink-0 text-sky" aria-hidden="true" />
@@ -224,11 +244,17 @@ export function Contact() {
               {COMPANY_PHONE_NUMBERS.map((phone) => (
                 <a
                   key={phone.href}
-                  href={phone.href}
+                  href={getPhoneLink(phone)}
+                  {...(phone.whatsapp && { target: "_blank", rel: "noreferrer" })}
                   className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 text-sm font-semibold text-navy transition-colors hover:border-sky/40 hover:text-sky"
                 >
-                  <Phone className="h-5 w-5 shrink-0 text-sky" aria-hidden="true" />
+                  {phone.whatsapp ? (
+                    <WhatsAppIcon className="h-5 w-5 shrink-0 text-[#25D366]" aria-hidden="true" />
+                  ) : (
+                    <Phone className="h-5 w-5 shrink-0 text-sky" aria-hidden="true" />
+                  )}
                   {phone.display}
+                  {phone.whatsapp && <span className="sr-only"> (WhatsApp)</span>}
                 </a>
               ))}
             </div>
@@ -236,7 +262,7 @@ export function Contact() {
             <div className="min-h-[360px] overflow-hidden rounded-2xl border border-border shadow-soft">
               <iframe
                 src={MAP_EMBED_SRC}
-                title="GK India SolarTech service area — Pune, Maharashtra"
+                title={`GK India SolarTech location — ${COMPANY_LOCALITY}`}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 className="h-full min-h-[360px] w-full border-0"
