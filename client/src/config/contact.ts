@@ -28,13 +28,13 @@ export const COMPANY_PHONE_NUMBERS: CompanyPhone[] = [
 export type SocialPlatform = "facebook" | "instagram" | "youtube";
 
 /**
- * Public social profiles shown in the footer. TODO(business): these handles are placeholders —
- * replace each `href` with the real page URL. WhatsApp is not listed here; it is built from the
- * company number below.
+ * Public social profiles shown in the footer. Facebook and Instagram are the real pages;
+ * TODO(business): the YouTube handle is a placeholder — replace its `href` with the real channel URL.
+ * WhatsApp is not listed here; it is built from the company number below.
  */
 export const SOCIAL_LINKS: { platform: SocialPlatform; label: string; href: string }[] = [
-  { platform: "facebook", label: "Facebook", href: "https://www.facebook.com/gkindiasolartech" },
-  { platform: "instagram", label: "Instagram", href: "https://www.instagram.com/gkindiasolartech" },
+  { platform: "facebook", label: "Facebook", href: "https://www.facebook.com/people/GK-India-Solar-Tech/61591624555400/" },
+  { platform: "instagram", label: "Instagram", href: "https://www.instagram.com/gk_indiasolartech" },
   { platform: "youtube", label: "YouTube", href: "https://www.youtube.com/@gkindiasolartech" },
 ];
 
