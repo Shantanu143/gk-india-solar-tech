@@ -6,6 +6,7 @@ import { ROUTES } from "@/constant/routes";
 import { footerLinkGroups, legalLinks } from "@/data/navigation";
 import { Container } from "./Container";
 import { Logo } from "./Logo";
+import { SocialLinks } from "./SocialLinks";
 
 export function Footer() {
   const year = new Date().getFullYear();
@@ -20,6 +21,8 @@ export function Footer() {
               Residential, commercial and industrial solar EPC solutions — from estimate through
               installation, net metering and ongoing support.
             </p>
+            <h3 className="mt-7 text-sm font-semibold text-white">Follow us</h3>
+            <SocialLinks className="mt-4" />
           </div>
 
           {footerLinkGroups.map((group) => (

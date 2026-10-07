@@ -58,7 +58,7 @@ function SolutionsDropdown({ items }: { items: { label: string; href: string }[]
 export function Header() {
   const scrolled = useScrolled();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const phone = COMPANY_PHONE_NUMBERS[0];
+  const phone = COMPANY_PHONE_NUMBERS.find((p) => p.whatsapp) ?? COMPANY_PHONE_NUMBERS[0];
 
   return (
     <header
