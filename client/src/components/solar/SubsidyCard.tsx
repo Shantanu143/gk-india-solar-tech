@@ -1,12 +1,13 @@
 import { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { AnimatePresence, motion } from "framer-motion";
-import { BadgeCheck, IndianRupee, X } from "lucide-react";
+import { BadgeCheck, ExternalLink, IndianRupee, X } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
 import { EstimateDisclaimer } from "@/components/solar/EstimateDisclaimer";
 import { formatInr } from "@/lib/format";
+import { PM_SURYA_GHAR_PORTAL_URL } from "@/config/solarConfig";
 import type { SubsidyEstimate } from "@/types/solarEstimate";
 
 interface SubsidyCardProps {
@@ -118,6 +119,13 @@ export function SubsidyCard({ subsidy }: SubsidyCardProps) {
                     Our team confirms your exact eligibility and subsidy amount during the site
                     survey and application process.
                   </p>
+
+                  <Button asChild variant="secondary" size="sm" className="mt-5">
+                    <a href={PM_SURYA_GHAR_PORTAL_URL} target="_blank" rel="noopener noreferrer">
+                      Go to PM Surya Ghar Portal
+                      <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                    </a>
+                  </Button>
                 </motion.div>
               </Dialog.Content>
             </Dialog.Portal>

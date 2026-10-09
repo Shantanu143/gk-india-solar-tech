@@ -1,4 +1,4 @@
-import { BadgeCheck, IndianRupee, Info } from "lucide-react";
+import { BadgeCheck, ExternalLink, IndianRupee, Info } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Seo } from "@/components/layout/Seo";
 import { CTASection } from "@/components/marketing/CTASection";
@@ -11,6 +11,7 @@ import { Section } from "@/components/marketing/kit/Section";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
 import { ROUTES } from "@/constant/routes";
+import { PM_SURYA_GHAR_PORTAL_URL } from "@/config/solarConfig";
 import { Container } from "@/components/layout/Container";
 
 const SUBSIDY_SLABS = [
@@ -67,9 +68,17 @@ export function Subsidy() {
           { icon: BadgeCheck, label: "Eligibility explained" },
         ]}
         actions={
-          <Button asChild variant="white" size="lg">
-            <Link to={ROUTES.solarEstimate}>Check My Eligibility</Link>
-          </Button>
+          <>
+            <Button asChild variant="white" size="lg">
+              <Link to={ROUTES.solarEstimate}>Check My Eligibility</Link>
+            </Button>
+            <Button asChild variant="outline-light" size="lg">
+              <a href={PM_SURYA_GHAR_PORTAL_URL} target="_blank" rel="noopener noreferrer">
+                Apply on PM Surya Ghar Portal
+                <ExternalLink className="h-4 w-4" aria-hidden="true" />
+              </a>
+            </Button>
+          </>
         }
       />
 
@@ -115,6 +124,12 @@ export function Subsidy() {
             <p className="mt-4 text-xs text-muted-foreground">
               Our team confirms your exact eligibility and subsidy amount during the site survey and application process.
             </p>
+            <Button asChild variant="secondary" size="md" className="mt-5">
+              <a href={PM_SURYA_GHAR_PORTAL_URL} target="_blank" rel="noopener noreferrer">
+                Go to PM Surya Ghar Portal
+                <ExternalLink className="h-4 w-4" aria-hidden="true" />
+              </a>
+            </Button>
           </Reveal>
           <Reveal direction="right">
             <img

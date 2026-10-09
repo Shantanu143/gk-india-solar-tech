@@ -1,5 +1,8 @@
 import type { ProjectType } from "@/types/solarEstimate";
 
+/** Official PM Surya Ghar consumer portal where the government subsidy application is made. */
+export const PM_SURYA_GHAR_PORTAL_URL = "https://consumer.pmsuryaghar.gov.in/consumer/#/login";
+
 /**
  * Illustrative calculation configuration — stands in for the future `GET /api/solar/config`.
  * Every coefficient here is a rough, published-style rule of thumb (not a guarantee), matching
