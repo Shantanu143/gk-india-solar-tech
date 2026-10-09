@@ -117,7 +117,12 @@ export const surveyService = {
     await survey.save();
 
     const leadId = survey.lead.toString();
-    await leadService.updateLeadStatus({ leadId, status: "SURVEY_COMPLETED", actorName: input.actorName });
+    // A quotation no longer waits for the survey, so the lead may already be past SURVEY_REQUESTED —
+    // only advance it while it is still waiting on this survey.
+    const lead = await leadRepository.findById(leadId);
+    if (lead?.status === "SURVEY_REQUESTED") {
+      await leadService.updateLeadStatus({ leadId, status: "SURVEY_COMPLETED", actorName: input.actorName });
+    }
     await activityService.log({ leadId, type: "SURVEY_COMPLETED", actorName: input.actorName, description: "Site survey completed" });
 
     return toPublicSurvey(survey);

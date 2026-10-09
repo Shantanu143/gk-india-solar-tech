@@ -73,6 +73,8 @@ export interface Lead {
 
 export interface LeadFilters {
   status?: LeadStatus;
+  /** Any of these statuses (sent comma-separated); `status` wins if both are set. */
+  statuses?: LeadStatus[];
   projectType?: ProjectType;
   source?: LeadSource;
   assignedEmployeeId?: string;

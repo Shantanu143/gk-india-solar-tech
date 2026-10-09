@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Label";
 import { Modal } from "@/features/crm/components/Modal";
 import { useLeads } from "@/features/leads/hooks/useLeads";
+import { QUOTABLE_LEAD_STATUSES } from "@/features/leads/utils/leadWorkflow";
 import { useCreateQuotation } from "@/features/quotations/hooks/useQuotationMutations";
 import { ApiError } from "@/services/apiClient";
 
@@ -14,14 +15,14 @@ interface CreateQuotationModalProps {
 }
 
 /**
- * A lead can only reach SURVEY_COMPLETED while it has no quotation yet — creating one immediately
- * advances it to QUOTATION_PREPARED (see `quotationService.createQuotation`) — so this status
- * filter alone is enough to list exactly the leads eligible for a new quotation, no extra
- * cross-check against existing quotations needed.
+ * A lead can be quoted from any stage before it has a quotation — the site survey is optional.
+ * Creating a quotation immediately advances the lead to QUOTATION_PREPARED (see
+ * `quotationService.createQuotation`), so filtering on the pre-quotation stages alone lists exactly
+ * the leads eligible for a new quotation, no cross-check against existing quotations needed.
  */
 export function CreateQuotationModal({ open, onOpenChange, detailPath }: CreateQuotationModalProps) {
   const navigate = useNavigate();
-  const { data: eligibleLeads, isLoading } = useLeads({ status: "SURVEY_COMPLETED", pageSize: 100 });
+  const { data: eligibleLeads, isLoading } = useLeads({ statuses: QUOTABLE_LEAD_STATUSES, pageSize: 100 });
   const createQuotation = useCreateQuotation();
   const [leadId, setLeadId] = useState("");
 
@@ -47,7 +48,7 @@ export function CreateQuotationModal({ open, onOpenChange, detailPath }: CreateQ
       open={open}
       onOpenChange={handleClose}
       title="Create Quotation"
-      description="Pick a lead whose site survey and final configuration are complete — those become the quotation's line items."
+      description="Pick a lead to quote — the quotation is priced from its recommended solar system (or the final configuration, if a site survey was done)."
       size="sm"
       footer={
         <>
@@ -65,7 +66,7 @@ export function CreateQuotationModal({ open, onOpenChange, detailPath }: CreateQ
         <p className="text-sm text-muted-foreground">Loading eligible leads…</p>
       ) : leads.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No leads are ready yet — a quotation needs a lead whose site survey is complete.
+          No leads are waiting for a quotation — every open lead already has one.
         </p>
       ) : (
         <select

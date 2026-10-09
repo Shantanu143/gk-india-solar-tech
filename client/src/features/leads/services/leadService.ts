@@ -18,7 +18,8 @@ function toQueryString(params: Record<string, string | number | undefined>): str
 }
 
 export async function getLeads(params: GetLeadsParams = {}): Promise<PaginatedResult<Lead>> {
-  const qs = toQueryString({ ...params });
+  const { statuses, ...rest } = params;
+  const qs = toQueryString({ ...rest, statuses: statuses?.join(",") });
   return apiRequest<PaginatedResult<Lead>>(`/leads${qs}`);
 }
 

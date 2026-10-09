@@ -12,6 +12,8 @@ export interface UpdateLeadInput extends Partial<Omit<LeadAttrs, "assignedEmploy
 
 export interface LeadFilters {
   status?: LeadStatus;
+  /** Matches any of these statuses; `status` takes precedence when both are given. */
+  statuses?: LeadStatus[];
   projectType?: ProjectType;
   source?: LeadSource;
   assignedEmployeeId?: string;
@@ -29,6 +31,7 @@ export interface GetLeadsParams extends LeadFilters {
 function buildFilterQuery(filters: LeadFilters): Record<string, unknown> {
   const query: Record<string, unknown> = {};
   if (filters.status) query.status = filters.status;
+  else if (filters.statuses?.length) query.status = { $in: filters.statuses };
   if (filters.projectType) query.projectType = filters.projectType;
   if (filters.source) query.source = filters.source;
   if (filters.assignedEmployeeId) query.assignedEmployeeId = filters.assignedEmployeeId;

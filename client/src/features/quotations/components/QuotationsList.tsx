@@ -84,7 +84,7 @@ export function QuotationsList({ detailPath }: QuotationsListProps) {
           isError={isError}
           onRetry={() => refetch()}
           emptyTitle="No quotations found"
-          emptyDescription="Quotations generated from a lead's completed site survey will show up here."
+          emptyDescription="Quotations you create for your leads will show up here."
           renderMobileCard={(q) => (
             <Link
               to={detailPath(q.id)}

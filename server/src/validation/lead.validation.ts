@@ -7,6 +7,13 @@ export const listLeadsQuerySchema = z.object({
   pageSize: z.coerce.number().int().positive().max(500).default(10),
   sortDirection: z.enum(["asc", "desc"]).default("desc"),
   status: z.enum(LEAD_STATUSES).optional(),
+  // Comma-separated, e.g. "NEW,CONTACTED" — lets a screen list leads across several stages in one query.
+  statuses: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value ? value.split(",").map((part) => part.trim()).filter(Boolean) : undefined))
+    .pipe(z.array(z.enum(LEAD_STATUSES)).optional()),
   projectType: z.enum(PROJECT_TYPES).optional(),
   source: z.enum(LEAD_SOURCES).optional(),
   assignedEmployeeId: z.string().optional(),
@@ -33,10 +40,15 @@ export const addRemarkSchema = z.object({
 });
 export type AddRemarkInput = z.infer<typeof addRemarkSchema>;
 
+// Indian mobile numbers are stored as the bare 10 digits (no +91) — the country code is applied when
+// dialling / building WhatsApp links. Mirrors MOBILE_REGEX in the client's `lead.schema.ts`.
+const MOBILE_REGEX = /^[6-9]\d{9}$/;
+const mobileNumberSchema = z.string().trim().regex(MOBILE_REGEX, "Enter a valid 10-digit mobile number.");
+
 const leadCustomerSchema = z.object({
   fullName: z.string().trim().min(2),
-  mobile: z.string().trim().min(10),
-  whatsapp: z.string().trim().min(10),
+  mobile: mobileNumberSchema,
+  whatsapp: mobileNumberSchema,
   email: z.string().trim().email().optional(),
   address: z.string().trim().min(3),
 });

@@ -19,9 +19,10 @@ import { renderQuotationPdfBuffer } from "../util/renderQuotationPdf";
 import { buildClickToChatLink, buildQuotationMessage } from "./whatsapp.service";
 import { toPublicQuotation, type PublicQuotation } from "../util/serializeQuotation";
 import { calculateEmi, calculateSubsidy, LOAN_CONFIG } from "../util/emiCalculator";
-import type { FinalSolarConfigurationDocument } from "../models/FinalSolarConfiguration.model";
+import { QUOTABLE_LEAD_STATUSES } from "../util/leadWorkflow";
+import { LEAD_STATUS_LABEL } from "../util/leadStatusLabels";
 import type { ProductDocument, ProductCategory } from "../models/Product.model";
-import type { ProjectType, LostReason } from "../models/Lead.model";
+import type { LeadDocument, ProjectType, LostReason } from "../models/Lead.model";
 
 export interface PaginatedQuotations {
   items: PublicQuotation[];
@@ -48,7 +49,30 @@ function findBestMatch(products: ProductDocument[], specKey: string, specValue: 
   return products.find((p) => p.specs?.[specKey] === specValue) ?? products[0];
 }
 
-async function buildItemsFromFinalConfiguration(config: FinalSolarConfigurationDocument): Promise<QuotationItemInput[]> {
+/** The system a quotation prices — the surveyed final configuration when one exists, otherwise the lead's own recommendation. */
+interface SystemSpec {
+  systemCapacityKw: number;
+  panelModel: string;
+  panelWattage: number;
+  numberOfPanels: number;
+  inverterCapacityKw: number;
+  structureType: string;
+}
+
+// Same defaults the survey's final-configuration form pre-fills from the recommendation.
+function systemSpecFromLead(lead: LeadDocument): SystemSpec {
+  const recommendation = lead.solarRecommendation;
+  return {
+    systemCapacityKw: recommendation.recommendedCapacity,
+    panelModel: `${recommendation.panelCapacity}W Mono PERC`,
+    panelWattage: recommendation.panelCapacity,
+    numberOfPanels: recommendation.estimatedPanels,
+    inverterCapacityKw: recommendation.recommendedInverter,
+    structureType: "GK India SolarTech Structure",
+  };
+}
+
+async function buildItemsFromSystemSpec(config: SystemSpec): Promise<QuotationItemInput[]> {
   const [panels, inverters, structures] = await Promise.all([
     productRepository.listActiveByCategory("PANEL"),
     productRepository.listActiveByCategory("INVERTER"),
@@ -121,30 +145,34 @@ export const quotationService = {
     return quotation ? toPublicQuotation(quotation) : null;
   },
 
+  /**
+   * The site survey is optional: with a final configuration on file the quotation is priced from it,
+   * otherwise from the lead's own solar recommendation. Either way the lead moves straight to
+   * QUOTATION_PREPARED from whatever pre-quotation stage it is in.
+   */
   async createQuotation(input: { leadId: string; actorName: string }): Promise<PublicQuotation> {
     const lead = await leadRepository.findById(input.leadId);
     if (!lead) throw ApiError.notFound("Lead not found.");
-    if (lead.status !== "SURVEY_COMPLETED") {
-      throw ApiError.badRequest("Complete the site survey before generating a quotation.");
-    }
 
     const existing = await quotationRepository.findByLeadId(input.leadId);
     if (existing) throw ApiError.conflict("A quotation already exists for this lead.");
 
-    const finalConfig = await finalConfigurationRepository.findByLeadId(input.leadId);
-    if (!finalConfig) {
-      throw ApiError.badRequest("Prepare the final solar configuration before generating a quotation.");
+    if (!QUOTABLE_LEAD_STATUSES.includes(lead.status)) {
+      throw ApiError.badRequest(`A quotation can't be created for a lead that is ${LEAD_STATUS_LABEL[lead.status]}.`);
     }
 
-    const items = await buildItemsFromFinalConfiguration(finalConfig);
-    const subsidyAmount = calculateSubsidy(finalConfig.systemCapacityKw, lead.projectType as ProjectType);
+    const finalConfig = await finalConfigurationRepository.findByLeadId(input.leadId);
+    const spec = finalConfig ?? systemSpecFromLead(lead);
+
+    const items = await buildItemsFromSystemSpec(spec);
+    const subsidyAmount = calculateSubsidy(spec.systemCapacityKw, lead.projectType as ProjectType);
     const { subtotal, totalAmount, emiEstimate } = computeTotals(items, subsidyAmount, 0);
 
     const quotationNumber = await quotationRepository.nextQuotationNumber();
     const quotation = await quotationRepository.create({
       quotationNumber,
       lead: lead._id,
-      finalConfiguration: finalConfig._id,
+      finalConfiguration: finalConfig?._id ?? null,
       items,
       subtotal,
       subsidyAmount,
@@ -157,7 +185,12 @@ export const quotationService = {
       preparedBy: input.actorName,
     });
 
-    await leadService.updateLeadStatus({ leadId: input.leadId, status: "QUOTATION_PREPARED", actorName: input.actorName });
+    await leadService.updateLeadStatus({
+      leadId: input.leadId,
+      status: "QUOTATION_PREPARED",
+      actorName: input.actorName,
+      skipWorkflowCheck: true,
+    });
     await activityService.log({
       leadId: input.leadId,
       type: "QUOTATION_CREATED",
@@ -309,13 +342,15 @@ export const quotationService = {
     // A converted lead becomes a real Customer + Project — both idempotent, so this is safe even
     // if accept somehow ran twice.
     if (lead) {
+      // No surveyed configuration (the survey is optional) → the capacity the quotation was priced on.
       const finalConfig = await finalConfigurationRepository.findByLeadId(leadId);
-      const customer = await customerService.createFromLead(lead, finalConfig?.systemCapacityKw);
+      const systemCapacityKw = finalConfig?.systemCapacityKw ?? lead.solarRecommendation.recommendedCapacity;
+      const customer = await customerService.createFromLead(lead, systemCapacityKw);
       await projectService.createFromConversion({
         leadId,
         customer,
         quotation,
-        systemCapacityKw: finalConfig?.systemCapacityKw ?? 0,
+        systemCapacityKw,
       });
 
       // Booking is the "ON_BOOKING" commission trigger for a partner-sourced lead — evaluateForLead
@@ -329,7 +364,7 @@ export const quotationService = {
             partnerId: lead.partnerId.toString(),
             partnerType: partner.type,
             projectType: lead.projectType,
-            systemCapacityKw: finalConfig?.systemCapacityKw ?? 0,
+            systemCapacityKw,
             bookingAmount: quotation.totalAmount,
             trigger: "ON_BOOKING",
           });

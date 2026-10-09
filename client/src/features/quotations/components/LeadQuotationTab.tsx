@@ -20,7 +20,7 @@ export function LeadQuotationTab({ lead }: { lead: Lead }) {
       <EmptyState
         icon={FileText}
         title="No quotation yet"
-        description="Generate a quotation from the actions above once the site survey and final configuration are complete."
+        description="Use Generate Quotation in the actions above to prepare one for this lead — no site survey needed."
       />
     );
   }

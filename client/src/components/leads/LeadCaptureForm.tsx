@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { Textarea } from "@/components/ui/Textarea";
 import { leadSchema, type LeadFormValues } from "@/schemas/lead.schema";
 
@@ -36,7 +37,7 @@ export function LeadCaptureForm({ defaultAddress, isSubmitting, submitError, onS
 
       <div>
         <Label htmlFor="mobile">Mobile Number</Label>
-        <Input id="mobile" type="tel" inputMode="numeric" invalid={!!errors.mobile} {...register("mobile")} />
+        <PhoneInput id="mobile" invalid={!!errors.mobile} {...register("mobile")} />
         {errors.mobile && <p className="mt-1.5 text-xs text-error">{errors.mobile.message}</p>}
       </div>
 
@@ -48,13 +49,7 @@ export function LeadCaptureForm({ defaultAddress, isSubmitting, submitError, onS
         {!sameAsMobile && (
           <div className="mt-3">
             <Label htmlFor="whatsapp">WhatsApp Number</Label>
-            <Input
-              id="whatsapp"
-              type="tel"
-              inputMode="numeric"
-              invalid={!!errors.whatsapp}
-              {...register("whatsapp")}
-            />
+            <PhoneInput id="whatsapp" invalid={!!errors.whatsapp} {...register("whatsapp")} />
             {errors.whatsapp && <p className="mt-1.5 text-xs text-error">{errors.whatsapp.message}</p>}
           </div>
         )}

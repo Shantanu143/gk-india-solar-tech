@@ -100,14 +100,25 @@ export const leadService = {
     return toPublicLead(lead);
   },
 
-  async updateLeadStatus(input: { leadId: string; status: LeadStatus; actorName: string; lostReason?: LostReason }): Promise<PublicLead> {
+  /**
+   * `skipWorkflowCheck` is for server-side callers that have already established the move is valid
+   * by other means (e.g. creating a quotation from any pre-quotation stage). It is never read from
+   * a request body — the controller builds this input field by field.
+   */
+  async updateLeadStatus(input: {
+    leadId: string;
+    status: LeadStatus;
+    actorName: string;
+    lostReason?: LostReason;
+    skipWorkflowCheck?: boolean;
+  }): Promise<PublicLead> {
     const existing = await leadRepository.findById(input.leadId);
     if (!existing) throw ApiError.notFound("Lead not found.");
 
     if (isTerminalLeadStatus(existing.status)) {
       throw ApiError.badRequest(`This lead is already ${LEAD_STATUS_LABEL[existing.status]} and cannot change status further.`);
     }
-    if (!canTransitionLead(existing.status, input.status)) {
+    if (!input.skipWorkflowCheck && !canTransitionLead(existing.status, input.status)) {
       throw ApiError.badRequest(`Cannot move a lead from ${LEAD_STATUS_LABEL[existing.status]} to ${LEAD_STATUS_LABEL[input.status]}.`);
     }
 

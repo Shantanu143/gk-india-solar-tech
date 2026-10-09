@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
 import { motion } from "framer-motion";
-import { CheckCircle2, Download, Home } from "lucide-react";
+import { CheckCircle2, Home } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Reveal } from "@/components/ui/Reveal";
@@ -109,16 +109,6 @@ export function LeadSuccess({ firstName, leadId, projectType, city, recommendedC
             Chat On WhatsApp
           </Button>
         )}
-        <Button
-          variant="secondary"
-          size="lg"
-          disabled
-          className="gap-1.5"
-          title="Your detailed proposal PDF will be available once our team prepares it"
-        >
-          <Download className="h-4 w-4" aria-hidden="true" />
-          Download Estimate
-        </Button>
         <Button asChild variant="tertiary" size="lg">
           <Link to={ROUTES.home} className="gap-1.5">
             <Home className="h-4 w-4" aria-hidden="true" />

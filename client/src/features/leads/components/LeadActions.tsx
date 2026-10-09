@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/features/crm/hooks/authContext";
 import { CRM_ROUTES } from "@/features/crm/utils/routes";
 import type { Lead, LeadStatus } from "@/features/leads/types/lead";
+import { canCreateQuotation } from "@/features/leads/utils/leadWorkflow";
 import { useCreateQuotation } from "@/features/quotations/hooks/useQuotationMutations";
 import { ApiError } from "@/services/apiClient";
 
@@ -41,10 +42,10 @@ export function LeadActions({ lead, onAssign, onAddFollowUp, onScheduleSurvey }:
     });
   }
 
-  // Only the transitions the configured lead workflow actually allows — FOLLOW_UP → SURVEY_REQUESTED
-  // and SURVEY_COMPLETED → QUOTATION_PREPARED — get their action button shown.
+  // A survey can still be requested from FOLLOW_UP, but it's optional: a quotation can be generated
+  // from any stage before one exists.
   const canRequestSurvey = lead.status === "FOLLOW_UP";
-  const canGenerateQuotation = lead.status === "SURVEY_COMPLETED";
+  const canGenerateQuotation = canCreateQuotation(lead.status);
 
   return (
     <div className="flex flex-wrap items-center gap-2">

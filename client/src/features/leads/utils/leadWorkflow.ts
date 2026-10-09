@@ -21,6 +21,17 @@ export const LEAD_STATUS_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
 
 const TERMINAL_STATUSES: LeadStatus[] = ["CONVERTED", "LOST"];
 
+/**
+ * Every stage a lead can be in while it has no quotation yet. A quotation can be created from any
+ * of them — the site survey is optional. Mirrors `QUOTABLE_LEAD_STATUSES` in the server's
+ * `leadWorkflow.ts`; keep both in sync.
+ */
+export const QUOTABLE_LEAD_STATUSES: LeadStatus[] = ["NEW", "CONTACTED", "FOLLOW_UP", "SURVEY_REQUESTED", "SURVEY_COMPLETED"];
+
+export function canCreateQuotation(status: LeadStatus): boolean {
+  return QUOTABLE_LEAD_STATUSES.includes(status);
+}
+
 /** Statuses this lead could move to next — LOST is appended for every non-terminal status. */
 export function getAllowedNextStatuses(current: LeadStatus): LeadStatus[] {
   if (TERMINAL_STATUSES.includes(current)) return [];
