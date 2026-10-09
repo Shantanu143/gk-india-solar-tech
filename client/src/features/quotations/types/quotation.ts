@@ -53,8 +53,12 @@ export const QUOTATION_STATUS_LABEL: Record<QuotationStatus, string> = {
 
 export interface SendQuotationResult {
   quotation: Quotation;
-  /** wa.me click-to-chat link with the customer's number and a ready-made message. */
+  /** Message text (no PDF link) — the caption when the PDF file itself is shared. */
+  caption: string;
+  /** wa.me link to the customer's chat with `caption` pre-typed; the sender attaches the PDF. */
+  whatsappChatLink: string;
+  /** wa.me link to the customer's chat with the message plus a private link to the PDF (fallback). */
   whatsappLink: string;
-  /** Private link to the PDF that the message contains. */
+  /** Private link to the PDF that the fallback message contains. */
   pdfUrl: string;
 }

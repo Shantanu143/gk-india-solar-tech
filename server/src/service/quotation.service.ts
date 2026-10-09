@@ -24,6 +24,17 @@ import { LEAD_STATUS_LABEL } from "../util/leadStatusLabels";
 import type { ProductDocument, ProductCategory } from "../models/Product.model";
 import type { LeadDocument, ProjectType, LostReason } from "../models/Lead.model";
 
+export interface SendQuotationResult {
+  quotation: PublicQuotation;
+  /** The WhatsApp message text without a PDF link — used as the caption when the PDF file itself is shared. */
+  caption: string;
+  /** wa.me link to the customer's chat with `caption` pre-typed (the sender attaches the PDF). */
+  whatsappChatLink: string;
+  /** wa.me link to the customer's chat with the message plus a private link to the PDF. */
+  whatsappLink: string;
+  pdfUrl: string;
+}
+
 export interface PaginatedQuotations {
   items: PublicQuotation[];
   total: number;
@@ -244,7 +255,8 @@ export const quotationService = {
     if (!lead) throw ApiError.notFound("Lead not found.");
     const finalConfig = await finalConfigurationRepository.findByLeadId(quotation.leadId);
     const survey = finalConfig ? await surveyRepository.findById(finalConfig.survey.toString()) : null;
-    const pdf = await renderQuotationPdfBuffer(quotation, lead, { finalConfig, survey });
+    // Without a survey the PDF still names the exact system the line items were priced on.
+    const pdf = await renderQuotationPdfBuffer(quotation, lead, { finalConfig: finalConfig ?? systemSpecFromLead(lead), survey });
     return { pdf, quotation, filename: `${quotation.quotationNumber}.pdf` };
   },
 
@@ -260,14 +272,15 @@ export const quotationService = {
   },
 
   /**
-   * Marks a draft as sent (re-sending an already-sent quotation is allowed) and returns a WhatsApp
-   * click-to-chat link for the customer with a ready-made message containing the PDF link.
+   * Marks a draft as sent (re-sending an already-sent quotation is allowed) and returns what the
+   * client needs to put the PDF in the customer's WhatsApp: a link-free caption + chat link for
+   * sharing the real PDF file, and a fallback message carrying a private link to the PDF instead.
    */
   async sendQuotation(input: {
     id: string;
     actorName: string;
     requestBaseUrl: string;
-  }): Promise<{ quotation: PublicQuotation; whatsappLink: string; pdfUrl: string }> {
+  }): Promise<SendQuotationResult> {
     const existing = await quotationRepository.findById(input.id);
     if (!existing) throw ApiError.notFound("Quotation not found.");
     if (existing.status !== "DRAFT" && existing.status !== "SENT") {
@@ -299,19 +312,24 @@ export const quotationService = {
       description: `Quotation ${updated.quotationNumber} sent to customer on WhatsApp`,
     });
 
-    const message = buildQuotationMessage({
+    const customerNumber = lead.customer.whatsapp || lead.customer.mobile;
+    const messageInput = {
       customerName: lead.customer.fullName,
       quotationNumber: updated.quotationNumber,
       systemSizeKw: finalConfig?.systemCapacityKw ?? lead.solarRecommendation.recommendedCapacity,
       netEffectivePrice: updated.totalAmount,
       validUntilLabel: formatDateLabel(updated.validUntil),
-      pdfUrl,
       preparedBy: input.actorName,
-    });
+    };
+    // Without a link: for when the PDF itself is attached (share sheet) or attached by hand.
+    const caption = buildQuotationMessage(messageInput);
 
     return {
       quotation: toPublicQuotation(updated),
-      whatsappLink: buildClickToChatLink(lead.customer.whatsapp || lead.customer.mobile, message),
+      caption,
+      whatsappChatLink: buildClickToChatLink(customerNumber, caption),
+      // Fallback for devices that can't attach files: the same message plus a private link to the PDF.
+      whatsappLink: buildClickToChatLink(customerNumber, buildQuotationMessage({ ...messageInput, pdfUrl })),
       pdfUrl,
     };
   },

@@ -1,8 +1,8 @@
 /**
- * WhatsApp delivery is deliberately API-free: the sender's own WhatsApp (app or Web) opens with the
- * customer's chat and a ready-made message that contains a private link to the quotation PDF. A
- * `wa.me` link cannot attach a file, so the PDF travels as that link — the customer taps it to
- * open/download the branded PDF.
+ * WhatsApp delivery is deliberately API-free: the sender's own WhatsApp opens with the customer's
+ * chat and a ready-made message. A `wa.me` link cannot attach a file, so the PDF itself travels
+ * either through the device's share sheet (the browser hands the real file to WhatsApp) or — as a
+ * fallback — as a private link inside the message.
  */
 
 /** WhatsApp wants digits only, with country code. Indian 10-digit numbers get "91". */
@@ -19,7 +19,8 @@ export interface QuotationMessageInput {
   systemSizeKw: number;
   netEffectivePrice: number;
   validUntilLabel: string;
-  pdfUrl: string;
+  /** Omit when the PDF itself is attached to the message — the text then carries no link. */
+  pdfUrl?: string;
   preparedBy: string;
 }
 
@@ -33,9 +34,7 @@ export function buildQuotationMessage(input: QuotationMessageInput): string {
     `System size: ${input.systemSizeKw} kW`,
     `Net effective price (after subsidy): Rs. ${input.netEffectivePrice.toLocaleString("en-IN")}`,
     `Valid until: ${input.validUntilLabel}`,
-    "",
-    "View / download your quotation (PDF):",
-    input.pdfUrl,
+    ...(input.pdfUrl ? ["", "View / download your quotation (PDF):", input.pdfUrl] : []),
     "",
     "Reply here for any questions.",
     `- ${input.preparedBy}, GK India SolarTech`,

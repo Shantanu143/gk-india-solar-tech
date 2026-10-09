@@ -62,36 +62,53 @@ export async function rejectQuotation(input: { id: string; lostReason?: string }
   return quotation;
 }
 
-export async function downloadQuotationPdf(quotation: Quotation): Promise<void> {
-  const blob = await apiRequestBlob(`/quotations/${quotation.id}/pdf`);
+function saveBlob(blob: Blob | File, filename: string): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `${quotation.quotationNumber}.pdf`;
+  link.download = filename;
   document.body.appendChild(link);
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
 }
 
-/**
- * Mobile-friendly alternative: hands the actual PDF file to the phone's share sheet so it can go
- * straight into a WhatsApp chat as an attachment. Returns false when the browser can't share files
- * (most desktops), so callers can fall back to the message-with-link flow.
- */
-export async function shareQuotationPdfFile(quotation: Quotation, customerName: string): Promise<boolean> {
+export async function downloadQuotationPdf(quotation: Quotation): Promise<void> {
   const blob = await apiRequestBlob(`/quotations/${quotation.id}/pdf`);
-  const file = new File([blob], `${quotation.quotationNumber}.pdf`, { type: "application/pdf" });
-  if (!navigator.canShare?.({ files: [file] })) return false;
+  saveBlob(blob, `${quotation.quotationNumber}.pdf`);
+}
+
+/** Fetches the quotation's PDF as a File, ready to hand to the share sheet or save to disk. */
+export async function fetchQuotationPdfFile(quotation: Quotation): Promise<File> {
+  const blob = await apiRequestBlob(`/quotations/${quotation.id}/pdf`);
+  return new File([blob], `${quotation.quotationNumber}.pdf`, { type: "application/pdf" });
+}
+
+/** Whether this browser/device can hand a PDF file straight to another app (WhatsApp) — phones, and some desktops. */
+export function canSharePdfFile(file: File): boolean {
+  return typeof navigator.canShare === "function" && navigator.canShare({ files: [file] });
+}
+
+/** Saves an already-fetched PDF to the device (no network). */
+export function savePdfFile(file: File): void {
+  saveBlob(file, file.name);
+}
+
+export type ShareOutcome = "shared" | "cancelled" | "needs-tap";
+
+/**
+ * Opens the share sheet with the real PDF attached, so the person picks WhatsApp and the customer's
+ * chat and the file goes straight in. Must run inside a click (the file is passed in already
+ * fetched, so there is nothing to await first). "needs-tap" means the browser rejected the call
+ * because it wasn't triggered by a fresh tap — the caller should ask for one.
+ */
+export async function sharePdfFile(file: File, title: string, caption: string): Promise<ShareOutcome> {
   try {
-    await navigator.share({
-      files: [file],
-      title: `Solar quotation ${quotation.quotationNumber}`,
-      text: `Hello ${customerName}, here is your GK India SolarTech solar quotation ${quotation.quotationNumber}.`,
-    });
+    await navigator.share({ files: [file], title, text: caption });
+    return "shared";
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") return true; // user closed the sheet
+    if (error instanceof DOMException && error.name === "AbortError") return "cancelled";
+    if (error instanceof DOMException && error.name === "NotAllowedError") return "needs-tap";
     throw error;
   }
-  return true;
 }

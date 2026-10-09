@@ -3,7 +3,7 @@ import path from "node:path";
 import PDFDocument from "pdfkit";
 import type { PublicQuotation } from "./serializeQuotation";
 import type { LeadDocument } from "../models/Lead.model";
-import type { FinalSolarConfigurationDocument } from "../models/FinalSolarConfiguration.model";
+import type { InstallationType } from "../models/FinalSolarConfiguration.model";
 import type { SurveyDocument } from "../models/Survey.model";
 import { formatDateLabel } from "./dateLabels";
 import { calculateEmi, LOAN_CONFIG } from "./emiCalculator";
@@ -22,8 +22,20 @@ import {
   WHAT_YOU_GET,
 } from "../config/company";
 
+/** What the offer page prints about the system — the surveyed final configuration, or (no survey) the lead's recommended system. */
+export interface QuotationPdfSystem {
+  systemCapacityKw: number;
+  panelModel: string;
+  panelWattage: number;
+  numberOfPanels: number;
+  inverterCapacityKw: number;
+  structureType: string;
+  /** Only known once a survey has been done. */
+  installationType?: InstallationType;
+}
+
 export interface QuotationPdfContext {
-  finalConfig?: FinalSolarConfigurationDocument | null;
+  finalConfig?: QuotationPdfSystem | null;
   survey?: SurveyDocument | null;
 }
 
@@ -195,7 +207,7 @@ function drawCover(doc: Doc, q: PublicQuotation, lead: LeadDocument, kw: number)
 
   // headline
   f.med(doc).fontSize(10).fillColor("#BBD3F7").text("ROOFTOP SOLAR QUOTATION", M, 200, { characterSpacing: 2 });
-  f.bold(doc).fontSize(38).fillColor("#FFFFFF").text("Power your home", M, 222, { width: CW });
+  f.bold(doc).fontSize(38).fillColor("#FFFFFF").text(lead.projectType === "RESIDENTIAL" ? "Power your home" : "Power your business", M, 222, { width: CW });
   f.bold(doc).fontSize(38).fillColor("#FFFFFF").text("with the sun.", M, 266, { width: CW });
   f.reg(doc).fontSize(12).fillColor("#E3EDFB").text(`Prepared exclusively for`, M, 330);
   // Name sits left of the "system size" pill (170pt wide + gap), so it gets the remaining width on one line.
@@ -271,7 +283,7 @@ function drawOffer(doc: Doc, q: PublicQuotation, lead: LeadDocument, ctx: Quotat
     ["Inverter", cfg ? `${cfg.inverterCapacityKw} kW grid-tied inverter` : "As per final design"],
     ["Total panel capacity", panelTotalWp ? `${(panelTotalWp / 1000).toFixed(2)} kWp` : `${kw} kWp`],
     ["Mounting structure", cfg?.structureType ?? "Hot-dip galvanised structure"],
-    ["Installation type", cfg ? cfg.installationType.replace(/_/g, " ").replace(/\w+/g, (w) => (w.length <= 3 ? w : w[0] + w.slice(1).toLowerCase())) : "Rooftop"],
+    ["Installation type", cfg?.installationType ? cfg.installationType.replace(/_/g, " ").replace(/\w+/g, (w) => (w.length <= 3 ? w : w[0] + w.slice(1).toLowerCase())) : "Rooftop"],
     ["Roof", roof ? `${roof.roofType.length <= 3 ? roof.roofType : roof.roofType[0] + roof.roofType.slice(1).toLowerCase()} roof · ${rupee.format(roof.roofAreaSqft)} sq.ft` : "Verified at site survey"],
     ["Offering", "Turnkey EPC + AMC support"],
   ];

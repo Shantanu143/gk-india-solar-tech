@@ -16,7 +16,13 @@ import { useLead } from "@/features/leads/hooks/useLead";
 import type { SendQuotationResult } from "@/features/quotations/types/quotation";
 import type { Lead } from "@/features/leads/types/lead";
 import { LOST_REASON_LABEL, type LostReason } from "@/features/leads/types/lead";
-import { downloadQuotationPdf, shareQuotationPdfFile } from "@/features/quotations/services/quotationService";
+import {
+  canSharePdfFile,
+  downloadQuotationPdf,
+  fetchQuotationPdfFile,
+  savePdfFile,
+  sharePdfFile,
+} from "@/features/quotations/services/quotationService";
 import {
   useAcceptQuotation,
   useRejectQuotation,
@@ -77,6 +83,9 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
   const [downloading, setDownloading] = useState(false);
   const [sentInfo, setSentInfo] = useState<SendQuotationResult | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [preparingPdf, setPreparingPdf] = useState(false);
+  const [savedForChat, setSavedForChat] = useState(false);
 
   const isDraft = quotation.status === "DRAFT";
   const isSent = quotation.status === "SENT";
@@ -121,24 +130,58 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
     updateItems.mutate({ id: quotation.id, items: itemsPayload(), discountAmount, notes });
   }
 
+  const customerName = lead?.customer.fullName ?? "the customer";
+  const canShareFile = pdfFile ? canSharePdfFile(pdfFile) : false;
+
+  function shareTitle(result: SendQuotationResult) {
+    return `Solar quotation ${result.quotation.quotationNumber}`;
+  }
+
+  /**
+   * Marks the quotation sent, then fetches the real PDF so it can go into the customer's WhatsApp as
+   * a file. If this tap is still "fresh" and the device can share files, the share sheet opens
+   * straight away; otherwise the panel below offers one more tap (browsers only allow the share
+   * sheet from a tap, and the save + send round-trips can outlast it).
+   */
   function deliver() {
+    setShareError(null);
+    setPdfFile(null);
+    setSavedForChat(false);
     sendQuotation.mutate(quotation.id, {
-      onSuccess: (result) => {
+      onSuccess: async (result) => {
         setSentInfo(result);
-        // Opens the customer's WhatsApp chat with the message (incl. PDF link) already typed in.
-        window.open(result.whatsappLink, "_blank", "noopener");
+        setPreparingPdf(true);
+        try {
+          const file = await fetchQuotationPdfFile(result.quotation);
+          setPdfFile(file);
+          if (navigator.userActivation?.isActive && canSharePdfFile(file)) {
+            await sharePdfFile(file, shareTitle(result), result.caption);
+          }
+        } catch {
+          setShareError("Couldn't prepare the PDF for sharing. Use Download PDF, or send the link instead.");
+        } finally {
+          setPreparingPdf(false);
+        }
       },
     });
   }
 
   async function handleShareFile() {
+    if (!pdfFile || !sentInfo) return;
     setShareError(null);
     try {
-      const shared = await shareQuotationPdfFile(sentInfo?.quotation ?? quotation, lead?.customer.fullName ?? "there");
-      if (!shared) setShareError("This device can't share files directly — use Open WhatsApp (link) or Download PDF.");
+      await sharePdfFile(pdfFile, shareTitle(sentInfo), sentInfo.caption);
     } catch {
-      setShareError("Couldn't share the PDF. Please try again or use Download PDF.");
+      setShareError("Couldn't open the share sheet. Use “Download PDF & open WhatsApp chat” instead.");
     }
+  }
+
+  /** For devices that can't attach files themselves: save the PDF, open the customer's chat with the message typed in. */
+  function handleSaveAndOpenChat() {
+    if (!pdfFile || !sentInfo) return;
+    savePdfFile(pdfFile);
+    window.open(sentInfo.whatsappChatLink, "_blank", "noopener");
+    setSavedForChat(true);
   }
 
   function handleSend() {
@@ -346,7 +389,10 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
                   href={`mailto:${lead.customer.email}?subject=${encodeURIComponent(
                     `Your Solar Quotation ${quotation.quotationNumber}`,
                   )}&body=${encodeURIComponent(
-                    `Hi ${lead.customer.fullName},\n\nPlease find your solar quotation ${quotation.quotationNumber} attached (${formatInr(quotation.totalAmount)} total).\n\nThanks,\nGK India SolarTech`,
+                    // mailto: can't attach files — link to the PDF when this session has its share link, else ask the sender to attach the downloaded PDF.
+                    `Hi ${lead.customer.fullName},\n\nYour solar quotation ${quotation.quotationNumber} is ready (${formatInr(quotation.totalAmount)} net effective price).\n\n${
+                      sentInfo ? `View / download the PDF: ${sentInfo.pdfUrl}\n\n` : ""
+                    }Thanks,\nGK India SolarTech`,
                   )}`}
                 >
                   <Mail className="h-4 w-4" aria-hidden="true" />
@@ -360,7 +406,7 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
 
       {isDraft && canEdit && (
         <p className="text-xs text-muted-foreground">
-          "Send on WhatsApp" marks the quotation sent, moves the lead forward, and opens WhatsApp with the customer's chat and a ready-made message that includes a private link to the PDF — just press send. On a phone, "Share PDF file" attaches the PDF itself.
+          "Send on WhatsApp" marks the quotation sent, moves the lead forward, and shares the PDF file itself — pick WhatsApp and the customer's chat in the share sheet and the PDF goes straight in. If this device can't attach files, it downloads the PDF and opens the chat so you can attach it.
         </p>
       )}
 
@@ -369,20 +415,48 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
       )}
 
       {sentInfo && (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-green/30 bg-green/5 p-4 text-sm text-navy" role="status">
-          <WhatsAppIcon className="h-5 w-5 shrink-0 text-[#25D366]" />
-          <span className="min-w-0 flex-1">
-            Quotation marked as sent. WhatsApp opened with {lead?.customer.fullName ?? "the customer"}&apos;s chat and the
-            message ready — just press send. The message contains a private link to the PDF.
-          </span>
-          <Button asChild size="sm" className="gap-1.5 bg-[#25D366] hover:bg-[#1fb857]">
-            <a href={sentInfo.whatsappLink} target="_blank" rel="noreferrer">
-              <WhatsAppIcon className="h-4 w-4" /> Open WhatsApp again
-            </a>
-          </Button>
-          <Button type="button" size="sm" variant="secondary" onClick={handleShareFile}>
-            Share PDF file
-          </Button>
+        <div className="flex flex-col gap-3 rounded-xl border border-green/30 bg-green/5 p-4 text-sm text-navy" role="status">
+          <div className="flex items-start gap-3">
+            <WhatsAppIcon className="mt-0.5 h-5 w-5 shrink-0 text-[#25D366]" />
+            <p className="min-w-0 flex-1">
+              <strong>Quotation marked as sent.</strong>{" "}
+              {preparingPdf
+                ? "Preparing the PDF…"
+                : pdfFile && canShareFile
+                  ? `Share the PDF with ${customerName}: choose WhatsApp and their chat, and the file goes straight in.`
+                  : pdfFile
+                    ? `This device can't attach files by itself — download the PDF and attach it in ${customerName}'s WhatsApp chat.`
+                    : "The PDF couldn't be prepared — use Download PDF below or send the link."}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {pdfFile && canShareFile && (
+              <Button type="button" size="sm" className="gap-1.5 bg-[#25D366] hover:bg-[#1fb857]" onClick={handleShareFile}>
+                <WhatsAppIcon className="h-4 w-4" /> Share PDF on WhatsApp
+              </Button>
+            )}
+            {pdfFile && (
+              <Button
+                type="button"
+                size="sm"
+                variant={canShareFile ? "secondary" : "primary"}
+                className={canShareFile ? "gap-1.5" : "gap-1.5 bg-[#25D366] hover:bg-[#1fb857]"}
+                onClick={handleSaveAndOpenChat}
+              >
+                <Download className="h-4 w-4" aria-hidden="true" /> Download PDF &amp; open WhatsApp chat
+              </Button>
+            )}
+            <Button asChild size="sm" variant="tertiary">
+              <a href={sentInfo.whatsappLink} target="_blank" rel="noreferrer">
+                Send PDF link instead
+              </a>
+            </Button>
+          </div>
+          {savedForChat && pdfFile && (
+            <p className="text-xs text-muted-foreground">
+              {pdfFile.name} is in your downloads. In WhatsApp tap the paperclip → Document, pick it, then press send.
+            </p>
+          )}
         </div>
       )}
       {shareError && <p className="text-sm text-error">{shareError}</p>}
