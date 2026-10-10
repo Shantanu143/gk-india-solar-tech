@@ -4,7 +4,8 @@ import { QuotationModel, type QuotationAttrs, type QuotationItem, type Quotation
 /** A line item as accepted from the service layer — `productId` may still be a plain string here; Mongoose casts it on save. */
 export type QuotationItemInput = Omit<QuotationItem, "_id" | "productId"> & { productId?: string | Types.ObjectId | null };
 
-export interface CreateQuotationInput extends Omit<QuotationAttrs, "createdAt" | "updatedAt" | "lead" | "finalConfiguration" | "items"> {
+export interface CreateQuotationInput extends Omit<QuotationAttrs, "createdAt" | "updatedAt" | "lead" | "finalConfiguration" | "items" | "surveyImages"> {
+  surveyImages?: QuotationAttrs["surveyImages"];
   lead: string | Types.ObjectId;
   finalConfiguration?: string | Types.ObjectId | null;
   items: QuotationItemInput[];

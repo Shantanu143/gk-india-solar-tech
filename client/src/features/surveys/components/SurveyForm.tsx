@@ -59,7 +59,7 @@ export function SurveyForm({ survey }: SurveyFormProps) {
   function handleMeterPhotoChange(photos: SurveyPhoto[]) {
     const photo = photos[0];
     setMeterPhoto(photo);
-    saveProgress.mutate({ id: survey.id, meterPhoto: photo });
+    saveProgress.mutate({ id: survey.id, meterPhoto: photo ?? null });
   }
 
   function handleBillChange(doc: SurveyDocument | undefined) {
@@ -85,7 +85,7 @@ export function SurveyForm({ survey }: SurveyFormProps) {
         },
         gpsLocation,
         roofPhotos,
-        meterPhoto,
+        meterPhoto: meterPhoto ?? null,
         electricityBillDocument: billDocument,
         notes: values.notes,
         actorName: user?.name ?? "System",

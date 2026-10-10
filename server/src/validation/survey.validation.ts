@@ -48,7 +48,8 @@ export const saveSurveyProgressSchema = z.object({
   roofAssessment: roofAssessmentSchema.optional(),
   gpsLocation: gpsLocationSchema.optional(),
   roofPhotos: z.array(surveyPhotoSchema).optional(),
-  meterPhoto: surveyPhotoSchema.optional(),
+  // null clears the meter photo (an omitted field leaves it as it was).
+  meterPhoto: surveyPhotoSchema.nullable().optional(),
   electricityBillDocument: surveyDocumentFileSchema.optional(),
   notes: z.string().trim().optional(),
 });

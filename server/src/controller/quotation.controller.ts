@@ -22,19 +22,26 @@ export const quotationController = {
   }),
 
   create: asyncHandler(async (req, res) => {
-    const quotation = await quotationService.createQuotation({ leadId: req.body.leadId, actorName: req.user!.name });
+    const quotation = await quotationService.createQuotation({
+      leadId: req.body.leadId,
+      actor: { name: req.user!.name, role: req.user!.role },
+    });
     res.status(201).json({ quotation });
   }),
 
   updateItems: asyncHandler(async (req, res) => {
-    const quotation = await quotationService.updateQuotationItems({ id: req.params.id, ...req.body });
+    const quotation = await quotationService.updateQuotationItems({
+      ...req.body,
+      id: req.params.id,
+      actor: { name: req.user!.name, role: req.user!.role },
+    });
     res.json({ quotation });
   }),
 
   send: asyncHandler(async (req, res) => {
     const result = await quotationService.sendQuotation({
       id: req.params.id,
-      actorName: req.user!.name,
+      actor: { name: req.user!.name, role: req.user!.role },
       requestBaseUrl: `${req.protocol}://${req.get("host")}`,
     });
     res.json(result);

@@ -14,16 +14,19 @@ interface PhotoUploaderProps {
   photos: SurveyPhoto[];
   onChange: (photos: SurveyPhoto[]) => void;
   maxPhotos?: number;
+  /** Longest edge in px photos are downscaled to before they're kept (default: the survey's 1600). */
+  maxDimension?: number;
 }
 
 let localCounter = 0;
+// The time prefix keeps ids unique across page loads — photos saved earlier may already hold "local-1" style ids.
 function localId(): string {
   localCounter += 1;
-  return `local-${localCounter}`;
+  return `local-${Date.now().toString(36)}-${localCounter}`;
 }
 
 /** Large touch targets, camera + gallery entry points, thumbnails with remove — built mobile-first. */
-export function PhotoUploader({ label, photos, onChange, maxPhotos = 8 }: PhotoUploaderProps) {
+export function PhotoUploader({ label, photos, onChange, maxPhotos = 8, maxDimension }: PhotoUploaderProps) {
   const [pending, setPending] = useState<PendingPhoto[]>([]);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -33,18 +36,23 @@ export function PhotoUploader({ label, photos, onChange, maxPhotos = 8 }: PhotoU
   async function handleFiles(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
     const files = Array.from(fileList).slice(0, Math.max(0, maxPhotos - photos.length));
+    const added: SurveyPhoto[] = [];
 
     for (const file of files) {
       const id = localId();
       setPending((prev) => [...prev, { id, fileName: file.name, status: "processing" }]);
       try {
-        const dataUrl = await compressImage(file);
-        const photo: SurveyPhoto = { id, url: dataUrl, fileName: file.name };
-        onChange([...photos, photo]);
-        setPending((prev) => prev.filter((p) => p.id !== id));
+        added.push({ id, url: await compressImage(file, maxDimension), fileName: file.name });
       } catch {
         setPending((prev) => prev.map((p) => (p.id === id ? { ...p, status: "error" } : p)));
       }
+    }
+
+    // One change for the whole selection (the parent may save on every change) — and built on this
+    // render's list, so picking several files at once keeps every one of them.
+    if (added.length > 0) {
+      onChange([...photos, ...added]);
+      setPending((prev) => prev.filter((p) => !added.some((photo) => photo.id === p.id)));
     }
   }
 

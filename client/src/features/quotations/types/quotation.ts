@@ -13,6 +13,16 @@ export interface QuotationItem {
   amount: number;
 }
 
+/** A site photo attached to a quotation (base64 data URI) — every one is printed in the quotation PDF. */
+export interface QuotationImage {
+  id: string;
+  url: string;
+  fileName: string;
+}
+
+/** Mirrors `MAX_QUOTATION_IMAGES` in the server's `quotationPhotos.ts`. */
+export const MAX_QUOTATION_IMAGES = 20;
+
 export interface EmiEstimate {
   principal: number;
   tenureYears: number;
@@ -30,6 +40,10 @@ export interface Quotation {
   discountAmount: number;
   totalAmount: number;
   emiEstimate?: EmiEstimate;
+  /** Always present; lists only carry this count. */
+  surveyImageCount: number;
+  /** Only on the single-quotation view and save responses — lists leave the (large) photo data out. */
+  surveyImages?: QuotationImage[];
   /** ISO date, e.g. "2026-08-15". */
   validUntil: string;
   status: QuotationStatus;

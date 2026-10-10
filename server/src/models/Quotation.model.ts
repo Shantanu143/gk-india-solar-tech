@@ -14,6 +14,13 @@ export interface QuotationItem {
   amount: number;
 }
 
+/** A site photo attached to the quotation — stored as a base64 data URI (same convention as survey photos) and printed in the PDF. */
+export interface QuotationImage {
+  id: string;
+  url: string;
+  fileName: string;
+}
+
 export interface EmiEstimate {
   principal: number;
   tenureYears: number;
@@ -30,6 +37,8 @@ export interface QuotationAttrs {
   discountAmount: number;
   totalAmount: number;
   emiEstimate?: EmiEstimate;
+  /** Site-survey photos the preparer attached; every one is printed on the "Site survey photos" pages of the PDF. */
+  surveyImages: QuotationImage[];
   validUntil: string;
   status: QuotationStatus;
   notes?: string;
@@ -64,6 +73,15 @@ const emiEstimateSchema = new Schema<EmiEstimate>(
   { _id: false },
 );
 
+const quotationImageSchema = new Schema<QuotationImage>(
+  {
+    id: { type: String, required: true },
+    url: { type: String, required: true },
+    fileName: { type: String, required: true },
+  },
+  { _id: false },
+);
+
 const quotationSchema = new Schema<QuotationAttrs>(
   {
     quotationNumber: { type: String, required: true, unique: true },
@@ -75,6 +93,7 @@ const quotationSchema = new Schema<QuotationAttrs>(
     discountAmount: { type: Number, required: true, default: 0 },
     totalAmount: { type: Number, required: true, default: 0 },
     emiEstimate: { type: emiEstimateSchema },
+    surveyImages: { type: [quotationImageSchema], default: [] },
     validUntil: { type: String, required: true },
     status: { type: String, enum: QUOTATION_STATUSES, required: true, default: "DRAFT" },
     notes: { type: String, trim: true },

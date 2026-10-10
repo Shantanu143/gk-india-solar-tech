@@ -19,10 +19,20 @@ import { renderQuotationPdfBuffer } from "../util/renderQuotationPdf";
 import { buildClickToChatLink, buildQuotationMessage } from "./whatsapp.service";
 import { toPublicQuotation, type PublicQuotation } from "../util/serializeQuotation";
 import { calculateEmi, calculateSubsidy, LOAN_CONFIG } from "../util/emiCalculator";
-import { QUOTABLE_LEAD_STATUSES } from "../util/leadWorkflow";
+import { AWAITING_SURVEY_LEAD_STATUSES, QUOTABLE_LEAD_STATUSES, QUOTABLE_WITHOUT_SURVEY_LEAD_STATUSES } from "../util/leadWorkflow";
+import { can } from "../util/permissions";
+import { collectSurveyPhotos, mergePhotos } from "../util/quotationPhotos";
 import { LEAD_STATUS_LABEL } from "../util/leadStatusLabels";
 import type { ProductDocument, ProductCategory } from "../models/Product.model";
+import type { QuotationImage } from "../models/Quotation.model";
+import type { UserRole } from "../models/User.model";
 import type { LeadDocument, ProjectType, LostReason } from "../models/Lead.model";
+
+/** Who is acting — their role decides whether they may skip the survey or curate photos. */
+export interface QuotationActor {
+  name: string;
+  role: UserRole;
+}
 
 export interface SendQuotationResult {
   quotation: PublicQuotation;
@@ -142,13 +152,13 @@ export const quotationService = {
     const { relevantToEmployeeId, ...rest } = params;
     const leadIdsForEmployee = relevantToEmployeeId ? await findRelevantLeadIds(relevantToEmployeeId) : undefined;
     const { items, total } = await quotationRepository.list({ ...rest, leadIdsForEmployee });
-    return { items: items.map(toPublicQuotation), total, page: params.page, pageSize: params.pageSize };
+    return { items: items.map((item) => toPublicQuotation(item)), total, page: params.page, pageSize: params.pageSize };
   },
 
   async getQuotation(id: string): Promise<PublicQuotation> {
     const quotation = await quotationRepository.findById(id);
     if (!quotation) throw ApiError.notFound("Quotation not found.");
-    return toPublicQuotation(quotation);
+    return toPublicQuotation(quotation, true);
   },
 
   async getQuotationByLeadId(leadId: string): Promise<PublicQuotation | null> {
@@ -157,19 +167,40 @@ export const quotationService = {
   },
 
   /**
-   * The site survey is optional: with a final configuration on file the quotation is priced from it,
-   * otherwise from the lead's own solar recommendation. Either way the lead moves straight to
-   * QUOTATION_PREPARED from whatever pre-quotation stage it is in.
+   * Sales follows the pipeline: a quotation is only prepared once the lead's site survey is completed
+   * and the site engineer has uploaded its photos. An admin (`quotations.createWithoutSurvey`) can quote
+   * on the spot at any stage. Either way the quotation starts with the survey's photos on it, it is
+   * priced from the final configuration (or, without one, the lead's own recommendation), and the lead
+   * moves to QUOTATION_PREPARED.
    */
-  async createQuotation(input: { leadId: string; actorName: string }): Promise<PublicQuotation> {
+  async createQuotation(input: { leadId: string; actor: QuotationActor }): Promise<PublicQuotation> {
     const lead = await leadRepository.findById(input.leadId);
     if (!lead) throw ApiError.notFound("Lead not found.");
 
     const existing = await quotationRepository.findByLeadId(input.leadId);
     if (existing) throw ApiError.conflict("A quotation already exists for this lead.");
 
-    if (!QUOTABLE_LEAD_STATUSES.includes(lead.status)) {
-      throw ApiError.badRequest(`A quotation can't be created for a lead that is ${LEAD_STATUS_LABEL[lead.status]}.`);
+    const survey = await surveyRepository.findForLead(input.leadId);
+    const surveyPhotos = collectSurveyPhotos(survey);
+
+    if (can(input.actor.role, "quotations.createWithoutSurvey")) {
+      if (!QUOTABLE_WITHOUT_SURVEY_LEAD_STATUSES.includes(lead.status)) {
+        throw ApiError.badRequest(`A quotation can't be created for a lead that is ${LEAD_STATUS_LABEL[lead.status]}.`);
+      }
+    } else {
+      if (AWAITING_SURVEY_LEAD_STATUSES.includes(lead.status)) {
+        throw ApiError.badRequest("Complete the site survey before generating a quotation for this lead.");
+      }
+      if (!QUOTABLE_LEAD_STATUSES.includes(lead.status)) {
+        throw ApiError.badRequest(`A quotation can't be created for a lead that is ${LEAD_STATUS_LABEL[lead.status]}.`);
+      }
+      // The lead's stage can be moved by hand, so the survey record itself is the source of truth.
+      if (!survey || survey.status !== "COMPLETED") {
+        throw ApiError.badRequest("Complete the site survey before generating a quotation for this lead.");
+      }
+      if (surveyPhotos.length === 0) {
+        throw ApiError.badRequest("The site engineer hasn't uploaded the survey photos yet — once they have, you can generate the quotation.");
+      }
     }
 
     const finalConfig = await finalConfigurationRepository.findByLeadId(input.leadId);
@@ -190,23 +221,26 @@ export const quotationService = {
       discountAmount: 0,
       totalAmount,
       emiEstimate,
+      surveyImages: mergePhotos([], surveyPhotos),
       gstRatePercent: DEFAULT_GST_RATE_PERCENT,
       validUntil: addDaysIso(30),
       status: "DRAFT",
-      preparedBy: input.actorName,
+      preparedBy: input.actor.name,
     });
 
+    // From the survey stage this is the normal next step; an admin quoting earlier jumps ahead of the pipeline.
+    const beforeSurveyDone = lead.status !== "SURVEY_COMPLETED";
     await leadService.updateLeadStatus({
       leadId: input.leadId,
       status: "QUOTATION_PREPARED",
-      actorName: input.actorName,
-      skipWorkflowCheck: true,
+      actorName: input.actor.name,
+      skipWorkflowCheck: beforeSurveyDone,
     });
     await activityService.log({
       leadId: input.leadId,
       type: "QUOTATION_CREATED",
-      actorName: input.actorName,
-      description: `Quotation ${quotationNumber} created`,
+      actorName: input.actor.name,
+      description: `Quotation ${quotationNumber} created${beforeSurveyDone ? " before the site survey was completed" : ""}`,
     });
     // Admins/managers get visibility into every quotation as it's generated, regardless of who prepared it.
     await notificationService.notifyRoles(["ADMIN", "SALES_MANAGER"], {
@@ -221,11 +255,16 @@ export const quotationService = {
 
   async updateQuotationItems(input: {
     id: string;
+    actor: QuotationActor;
     items: QuotationItemInput[];
+    surveyImages?: QuotationImage[];
     discountAmount?: number;
     validUntil?: string;
     notes?: string;
   }): Promise<PublicQuotation> {
+    if (input.surveyImages && !can(input.actor.role, "quotations.managePhotos")) {
+      throw ApiError.forbidden("Only an admin can add or remove photos on a quotation — the site engineer's survey photos are included automatically.");
+    }
     const existing = await quotationRepository.findById(input.id);
     if (!existing) throw ApiError.notFound("Quotation not found.");
     if (existing.status !== "DRAFT") throw ApiError.badRequest("Only draft quotations can be edited.");
@@ -239,23 +278,26 @@ export const quotationService = {
       discountAmount,
       totalAmount,
       emiEstimate,
+      ...(input.surveyImages ? { surveyImages: input.surveyImages } : {}),
       ...(input.validUntil ? { validUntil: input.validUntil } : {}),
       ...(input.notes !== undefined ? { notes: input.notes } : {}),
     });
     if (!quotation) throw ApiError.notFound("Quotation not found.");
-    return toPublicQuotation(quotation);
+    return toPublicQuotation(quotation, true);
   },
 
-  /** Builds the PDF for a quotation with everything the template needs (final config + survey). */
+  /** Builds the PDF for a quotation with everything the template needs (final config, survey, attached survey photos). */
   async buildPdf(quotationId: string): Promise<{ pdf: Buffer; quotation: PublicQuotation; filename: string }> {
     const doc = await quotationRepository.findById(quotationId);
     if (!doc) throw ApiError.notFound("Quotation not found.");
-    const quotation = toPublicQuotation(doc);
+    const quotation = toPublicQuotation(doc, true);
     const lead = await leadRepository.findById(quotation.leadId);
     if (!lead) throw ApiError.notFound("Lead not found.");
     const finalConfig = await finalConfigurationRepository.findByLeadId(quotation.leadId);
-    const survey = finalConfig ? await surveyRepository.findById(finalConfig.survey.toString()) : null;
-    // Without a survey the PDF still names the exact system the line items were priced on.
+    const survey = finalConfig
+      ? await surveyRepository.findById(finalConfig.survey.toString())
+      : await surveyRepository.findForLead(quotation.leadId);
+    // Without a final configuration the PDF still names the exact system the line items were priced on.
     const pdf = await renderQuotationPdfBuffer(quotation, lead, { finalConfig: finalConfig ?? systemSpecFromLead(lead), survey });
     return { pdf, quotation, filename: `${quotation.quotationNumber}.pdf` };
   },
@@ -278,7 +320,7 @@ export const quotationService = {
    */
   async sendQuotation(input: {
     id: string;
-    actorName: string;
+    actor: QuotationActor;
     requestBaseUrl: string;
   }): Promise<SendQuotationResult> {
     const existing = await quotationRepository.findById(input.id);
@@ -295,20 +337,32 @@ export const quotationService = {
     const baseUrl = (env.PUBLIC_API_URL ?? input.requestBaseUrl).replace(/\/$/, "");
     const pdfUrl = `${baseUrl}/api/public/quotations/${shareToken}/pdf`;
 
+    // Anyone who can't curate photos by hand gets every photo the site engineer has uploaded by the time
+    // the quotation goes out — including ones added after the draft was created. (An admin's own
+    // selection is left exactly as they set it.)
+    let surveyImages: QuotationImage[] | undefined;
+    if (wasDraft && !can(input.actor.role, "quotations.managePhotos")) {
+      const survey = await surveyRepository.findForLead(lead._id.toString());
+      const stored = (existing.surveyImages ?? []).map(({ id, url, fileName }) => ({ id, url, fileName }));
+      const merged = mergePhotos(stored, collectSurveyPhotos(survey));
+      if (merged.length !== stored.length) surveyImages = merged;
+    }
+
     const now = new Date();
     const updated = await quotationRepository.updateById(input.id, {
       shareToken,
       whatsappSentAt: now,
+      ...(surveyImages ? { surveyImages } : {}),
       ...(wasDraft ? { status: "SENT" as const, sentAt: now } : {}),
     });
     if (!updated) throw ApiError.notFound("Quotation not found.");
 
     const leadId = updated.lead.toString();
-    if (wasDraft) await leadService.updateLeadStatus({ leadId, status: "QUOTATION_SENT", actorName: input.actorName });
+    if (wasDraft) await leadService.updateLeadStatus({ leadId, status: "QUOTATION_SENT", actorName: input.actor.name });
     await activityService.log({
       leadId,
       type: "QUOTATION_SENT",
-      actorName: input.actorName,
+      actorName: input.actor.name,
       description: `Quotation ${updated.quotationNumber} sent to customer on WhatsApp`,
     });
 
@@ -319,7 +373,7 @@ export const quotationService = {
       systemSizeKw: finalConfig?.systemCapacityKw ?? lead.solarRecommendation.recommendedCapacity,
       netEffectivePrice: updated.totalAmount,
       validUntilLabel: formatDateLabel(updated.validUntil),
-      preparedBy: input.actorName,
+      preparedBy: input.actor.name,
     };
     // Without a link: for when the PDF itself is attached (share sheet) or attached by hand.
     const caption = buildQuotationMessage(messageInput);
@@ -360,7 +414,7 @@ export const quotationService = {
     // A converted lead becomes a real Customer + Project — both idempotent, so this is safe even
     // if accept somehow ran twice.
     if (lead) {
-      // No surveyed configuration (the survey is optional) → the capacity the quotation was priced on.
+      // No final configuration on file → the capacity the quotation was priced on.
       const finalConfig = await finalConfigurationRepository.findByLeadId(leadId);
       const systemCapacityKw = finalConfig?.systemCapacityKw ?? lead.solarRecommendation.recommendedCapacity;
       const customer = await customerService.createFromLead(lead, systemCapacityKw);

@@ -9,7 +9,7 @@ export function AdminSurveyDetailPage() {
   return (
     <>
       <Seo title="Survey Details | GK India SolarTech CRM" description="Site survey detail." path={CRM_ROUTES.adminSurveyDetail(surveyId)} noindex />
-      <SurveyDetailView surveyId={surveyId} variant="admin" leadDetailPath={CRM_ROUTES.adminLeadDetail} />
+      <SurveyDetailView surveyId={surveyId} leadDetailPath={CRM_ROUTES.adminLeadDetail} />
     </>
   );
 }

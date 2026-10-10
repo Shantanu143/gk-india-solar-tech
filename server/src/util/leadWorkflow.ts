@@ -20,12 +20,20 @@ export const LEAD_STATUS_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
 const TERMINAL_STATUSES: LeadStatus[] = ["CONVERTED", "LOST"];
 
 /**
- * Every stage a lead can be in while it has no quotation yet. A quotation can be prepared from any
- * of them — the site survey is optional — so creating one moves the lead straight to
- * QUOTATION_PREPARED (see `quotationService.createQuotation`) instead of walking the survey stages.
- * Mirrored by `QUOTABLE_LEAD_STATUSES` in the client's `leadWorkflow.ts`.
+ * Sales follows the pipeline: a quotation is only prepared once the site survey is done, so
+ * SURVEY_COMPLETED is the single stage it can start from (see `quotationService.createQuotation`,
+ * which also checks the survey and its photos). Mirrored by `QUOTABLE_LEAD_STATUSES` in the client's `leadWorkflow.ts`.
  */
-export const QUOTABLE_LEAD_STATUSES: LeadStatus[] = ["NEW", "CONTACTED", "FOLLOW_UP", "SURVEY_REQUESTED", "SURVEY_COMPLETED"];
+export const QUOTABLE_LEAD_STATUSES: LeadStatus[] = ["SURVEY_COMPLETED"];
+
+/**
+ * Admin quotes on the spot (`quotations.createWithoutSurvey`): any stage a lead can be in before it
+ * has a quotation. Mirrored by the client's `QUOTABLE_WITHOUT_SURVEY_LEAD_STATUSES`.
+ */
+export const QUOTABLE_WITHOUT_SURVEY_LEAD_STATUSES: LeadStatus[] = ["NEW", "CONTACTED", "FOLLOW_UP", "SURVEY_REQUESTED", "SURVEY_COMPLETED"];
+
+/** Stages before the survey is finished — a lead here must complete its site survey before it can be quoted. */
+export const AWAITING_SURVEY_LEAD_STATUSES: LeadStatus[] = ["NEW", "CONTACTED", "FOLLOW_UP", "SURVEY_REQUESTED"];
 
 export function getAllowedNextStatuses(current: LeadStatus): LeadStatus[] {
   if (TERMINAL_STATUSES.includes(current)) return [];

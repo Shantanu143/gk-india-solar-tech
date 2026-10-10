@@ -30,8 +30,10 @@ import {
   useUpdateQuotationItems,
 } from "@/features/quotations/hooks/useQuotationMutations";
 import { useQuotation } from "@/features/quotations/hooks/useQuotation";
+import { QuotationPhotosPanel } from "@/features/quotations/components/QuotationPhotosPanel";
 import { QuotationStatusBadge } from "@/features/quotations/components/QuotationStatusBadge";
-import type { Quotation, QuotationItem } from "@/features/quotations/types/quotation";
+import type { Quotation, QuotationImage, QuotationItem } from "@/features/quotations/types/quotation";
+import { useSurveyForLead } from "@/features/surveys/hooks/useSurvey";
 import { PRODUCT_CATEGORY_LABEL } from "@/features/products/types/product";
 import { formatDate, formatInr } from "@/lib/format";
 import { ApiError } from "@/services/apiClient";
@@ -45,6 +47,13 @@ let tempIdCounter = 0;
 function nextTempId(): string {
   tempIdCounter += 1;
   return `temp-${tempIdCounter}`;
+}
+
+/** Prefers the server's specific photo complaint (too large, wrong type…) over the generic "Validation failed." */
+function describeSaveError(error: unknown): string | null {
+  if (!(error instanceof ApiError)) return null;
+  const photoErrors = (error.details as { surveyImages?: string[] } | undefined)?.surveyImages;
+  return photoErrors?.length ? `Survey photos: ${photoErrors[0]}` : error.message;
 }
 
 export function QuotationBuilderView({ quotationId, leadDetailPath }: QuotationBuilderViewProps) {
@@ -75,7 +84,10 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
   const acceptQuotation = useAcceptQuotation();
   const rejectQuotation = useRejectQuotation();
 
+  const { data: survey } = useSurveyForLead(quotation.leadId);
+
   const [items, setItems] = useState<QuotationItem[]>(quotation.items);
+  const [surveyImages, setSurveyImages] = useState<QuotationImage[]>(quotation.surveyImages ?? []);
   const [discountAmount, setDiscountAmount] = useState(quotation.discountAmount);
   const [notes, setNotes] = useState(quotation.notes ?? "");
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -90,12 +102,15 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
   const isDraft = quotation.status === "DRAFT";
   const isSent = quotation.status === "SENT";
   const canEdit = can("quotations.create");
+  // Admin curates a quotation's photos by hand; everyone else gets the site engineer's survey photos automatically.
+  const canManagePhotos = can("quotations.managePhotos");
   const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
   const totalAmount = Math.max(0, subtotal - quotation.subsidyAmount - discountAmount);
   // Blank descriptions and non-positive quantities pass client state fine but 400 at the server —
   // block Save/Send on them here instead of letting the request fail with no clue which row is bad.
   const hasInvalidItems = items.some((item) => !item.description.trim() || item.quantity <= 0);
   const isMutating = updateItems.isPending || sendQuotation.isPending;
+  const surveyPhotos = survey ? [...survey.roofPhotos, ...(survey.meterPhoto ? [survey.meterPhoto] : [])] : [];
 
   function updateItem(id: string, patch: Partial<Pick<QuotationItem, "description" | "quantity" | "unitPrice">>) {
     setItems((prev) =>
@@ -126,8 +141,13 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
     }));
   }
 
+  // Only people who can manage photos send them — the server refuses a photo list from anyone else.
+  function photosPayload() {
+    return canManagePhotos ? { surveyImages } : {};
+  }
+
   function handleSaveDraft() {
-    updateItems.mutate({ id: quotation.id, items: itemsPayload(), discountAmount, notes });
+    updateItems.mutate({ id: quotation.id, items: itemsPayload(), ...photosPayload(), discountAmount, notes });
   }
 
   const customerName = lead?.customer.fullName ?? "the customer";
@@ -185,7 +205,7 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
   }
 
   function handleSend() {
-    updateItems.mutate({ id: quotation.id, items: itemsPayload(), discountAmount, notes }, { onSuccess: deliver });
+    updateItems.mutate({ id: quotation.id, items: itemsPayload(), ...photosPayload(), discountAmount, notes }, { onSuccess: deliver });
   }
 
   async function downloadPdf(target: Quotation) {
@@ -339,6 +359,15 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
         )}
       </GlassPanel>
 
+      <QuotationPhotosPanel
+        // Once sent, the photos are whatever was frozen onto the quotation (it may have gained the engineer's late uploads).
+        images={isDraft ? surveyImages : (quotation.surveyImages ?? [])}
+        editable={isDraft && canEdit && canManagePhotos}
+        isDraft={isDraft}
+        onChange={setSurveyImages}
+        surveyPhotos={surveyPhotos}
+      />
+
       <div className="flex flex-wrap items-center gap-2">
         {isDraft && canEdit && (
           <>
@@ -464,7 +493,7 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
       {(updateItems.isError || sendQuotation.isError) && (
         <p className="text-sm text-error">
           {updateItems.error instanceof ApiError
-            ? updateItems.error.message
+            ? describeSaveError(updateItems.error)
             : sendQuotation.error instanceof ApiError
               ? sendQuotation.error.message
               : "Something went wrong saving this quotation. Please try again."}

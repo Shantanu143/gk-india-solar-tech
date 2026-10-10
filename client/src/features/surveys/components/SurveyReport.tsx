@@ -22,10 +22,12 @@ function Field({ label, value }: { label: string; value: ReactNode }) {
 
 interface SurveyReportProps {
   survey: Survey;
+  /** Skip the read-only photo grid — used when an editable photos panel is shown right below. */
+  hidePhotos?: boolean;
 }
 
 /** Read-only summary matching the "SITE SURVEY REPORT" section from the requirements document. */
-export function SurveyReport({ survey }: SurveyReportProps) {
+export function SurveyReport({ survey, hidePhotos = false }: SurveyReportProps) {
   const engineer = getEmployeeById(survey.engineerId);
   const assessment = survey.roofAssessment;
 
@@ -85,7 +87,7 @@ export function SurveyReport({ survey }: SurveyReportProps) {
         </div>
       )}
 
-      {(survey.roofPhotos.length > 0 || survey.meterPhoto) && (
+      {!hidePhotos && (survey.roofPhotos.length > 0 || survey.meterPhoto) && (
         <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
           {survey.roofPhotos.map((photo) => (
             <div key={photo.id} className="aspect-square overflow-hidden rounded-xl border border-border bg-surface-muted">

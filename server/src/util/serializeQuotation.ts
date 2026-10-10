@@ -1,6 +1,11 @@
 import type { QuotationDocument } from "../models/Quotation.model";
 
-export function toPublicQuotation(quotation: QuotationDocument) {
+/**
+ * `withImages` embeds the survey photos (base64, potentially MBs) — only the single-quotation views
+ * and the PDF need them. Lists and summaries get `surveyImageCount` alone so they stay light.
+ */
+export function toPublicQuotation(quotation: QuotationDocument, withImages = false) {
+  const surveyImages = quotation.surveyImages ?? [];
   return {
     id: quotation._id.toString(),
     quotationNumber: quotation.quotationNumber,
@@ -20,6 +25,8 @@ export function toPublicQuotation(quotation: QuotationDocument) {
     discountAmount: quotation.discountAmount,
     totalAmount: quotation.totalAmount,
     emiEstimate: quotation.emiEstimate,
+    surveyImageCount: surveyImages.length,
+    ...(withImages ? { surveyImages: surveyImages.map(({ id, url, fileName }) => ({ id, url, fileName })) } : {}),
     validUntil: quotation.validUntil,
     status: quotation.status,
     notes: quotation.notes,

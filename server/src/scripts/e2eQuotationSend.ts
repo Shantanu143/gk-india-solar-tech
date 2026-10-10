@@ -30,13 +30,13 @@ async function main() {
     subtotal: 120000, subsidyAmount: 78000, discountAmount: 0, totalAmount: 42000, validUntil: "2099-01-01", status: "DRAFT", preparedBy: "Sales", gstRatePercent: 8.9,
   });
 
-  const sent = await quotationService.sendQuotation({ id: q.id, actorName: "Sales", requestBaseUrl: "https://api.example.in" });
+  const sent = await quotationService.sendQuotation({ id: q.id, actor: { name: "Sales", role: "SALES_EXECUTIVE" as const }, requestBaseUrl: "https://api.example.in" });
   console.log("status:", sent.quotation.status, "| link:", sent.whatsappLink.slice(0, 60));
   console.log("pdfUrl:", sent.pdfUrl.replace(/[0-9a-f]{48}/, "<token>"));
   const token = sent.pdfUrl.split("/").slice(-2, -1)[0]!;
   const { pdf } = await quotationService.getPdfByShareToken(token);
   console.log("public pdf bytes:", pdf.length, "header:", pdf.subarray(0, 5).toString());
-  const again = await quotationService.sendQuotation({ id: q.id, actorName: "Sales", requestBaseUrl: "https://api.example.in" });
+  const again = await quotationService.sendQuotation({ id: q.id, actor: { name: "Sales", role: "SALES_EXECUTIVE" as const }, requestBaseUrl: "https://api.example.in" });
   console.log("resend ok, same token:", again.pdfUrl === sent.pdfUrl);
   await quotationService.getPdfByShareToken("nope").catch((e: Error) => console.log("bad token ->", e.message));
 

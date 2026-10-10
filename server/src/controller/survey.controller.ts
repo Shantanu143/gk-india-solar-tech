@@ -37,17 +37,23 @@ export const surveyController = {
   }),
 
   start: asyncHandler(async (req, res) => {
-    const survey = await surveyService.startSurvey(req.params.id);
+    const survey = await surveyService.startSurvey(req.params.id, { id: req.user!.id, role: req.user!.role });
     res.json({ survey });
   }),
 
   saveProgress: asyncHandler(async (req, res) => {
-    const survey = await surveyService.saveSurveyProgress({ id: req.params.id, ...req.body });
+    // Trusted values go last so nothing in the request body can override who is acting or which survey.
+    const survey = await surveyService.saveSurveyProgress({ ...req.body, id: req.params.id, actor: { id: req.user!.id, role: req.user!.role } });
     res.json({ survey: toPublicSurvey(survey) });
   }),
 
   complete: asyncHandler(async (req, res) => {
-    const survey = await surveyService.completeSurvey({ id: req.params.id, ...req.body, actorName: req.user!.name });
+    const survey = await surveyService.completeSurvey({
+      ...req.body,
+      id: req.params.id,
+      actor: { id: req.user!.id, role: req.user!.role },
+      actorName: req.user!.name,
+    });
     res.json({ survey });
   }),
 

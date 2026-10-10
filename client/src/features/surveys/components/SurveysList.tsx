@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { DataTable, type DataTableColumn } from "@/features/crm/components/DataTable";
+import { useAuth } from "@/features/crm/hooks/authContext";
 import { cn } from "@/lib/utils";
 import { SurveyCard } from "@/features/surveys/components/SurveyCard";
 import { SurveyStatusBadge } from "@/features/surveys/components/SurveyStatusBadge";
@@ -22,13 +23,14 @@ interface SurveysListProps {
   relevantToEmployeeId?: string;
   detailPath: (surveyId: string) => string;
   initialScope?: (typeof SCOPES)[number]["key"];
-  /** Admin's company-wide view is read-only — starting the on-site form is the engineer's job. */
+  /** Offer "Start Survey" on scheduled rows — still only for the assigned engineer or an admin. */
   showStartAction?: boolean;
 }
 
 export function SurveysList({ relevantToEmployeeId, detailPath, initialScope = "upcoming", showStartAction = true }: SurveysListProps) {
   const [scope, setScope] = useState<(typeof SCOPES)[number]["key"]>(initialScope);
   const navigate = useNavigate();
+  const { user } = useAuth();
   const startSurvey = useStartSurvey();
 
   const { data: surveys = [], isLoading, isError, refetch } = useSurveys({
@@ -71,7 +73,7 @@ export function SurveysList({ relevantToEmployeeId, detailPath, initialScope = "
           >
             View
           </button>
-          {showStartAction && s.status === "SCHEDULED" && (
+          {showStartAction && s.status === "SCHEDULED" && !!user && (user.role === "ADMIN" || user.id === s.engineerId) && (
             <button
               type="button"
               disabled={startSurvey.isPending}

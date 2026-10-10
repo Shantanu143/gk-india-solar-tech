@@ -22,14 +22,28 @@ export const LEAD_STATUS_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
 const TERMINAL_STATUSES: LeadStatus[] = ["CONVERTED", "LOST"];
 
 /**
- * Every stage a lead can be in while it has no quotation yet. A quotation can be created from any
- * of them — the site survey is optional. Mirrors `QUOTABLE_LEAD_STATUSES` in the server's
- * `leadWorkflow.ts`; keep both in sync.
+ * Sales follows the pipeline: a quotation is only prepared once the site survey is done, so
+ * SURVEY_COMPLETED is the single stage it can start from. Mirrors `QUOTABLE_LEAD_STATUSES` in the
+ * server's `leadWorkflow.ts`; keep both in sync.
  */
-export const QUOTABLE_LEAD_STATUSES: LeadStatus[] = ["NEW", "CONTACTED", "FOLLOW_UP", "SURVEY_REQUESTED", "SURVEY_COMPLETED"];
+export const QUOTABLE_LEAD_STATUSES: LeadStatus[] = ["SURVEY_COMPLETED"];
 
-export function canCreateQuotation(status: LeadStatus): boolean {
-  return QUOTABLE_LEAD_STATUSES.includes(status);
+/**
+ * Admin quotes on the spot (`quotations.createWithoutSurvey`): any stage a lead can be in before it
+ * has a quotation. Mirrors the server's `QUOTABLE_WITHOUT_SURVEY_LEAD_STATUSES`.
+ */
+export const QUOTABLE_WITHOUT_SURVEY_LEAD_STATUSES: LeadStatus[] = ["NEW", "CONTACTED", "FOLLOW_UP", "SURVEY_REQUESTED", "SURVEY_COMPLETED"];
+
+/** Stages before the survey is finished — such a lead must complete its site survey before it can be quoted. */
+export const AWAITING_SURVEY_LEAD_STATUSES: LeadStatus[] = ["NEW", "CONTACTED", "FOLLOW_UP", "SURVEY_REQUESTED"];
+
+/** `canSkipSurvey` is the `quotations.createWithoutSurvey` permission — admin can quote at any pre-quotation stage. */
+export function canCreateQuotation(status: LeadStatus, canSkipSurvey = false): boolean {
+  return (canSkipSurvey ? QUOTABLE_WITHOUT_SURVEY_LEAD_STATUSES : QUOTABLE_LEAD_STATUSES).includes(status);
+}
+
+export function isAwaitingSurvey(status: LeadStatus): boolean {
+  return AWAITING_SURVEY_LEAD_STATUSES.includes(status);
 }
 
 /** Statuses this lead could move to next — LOST is appended for every non-terminal status. */

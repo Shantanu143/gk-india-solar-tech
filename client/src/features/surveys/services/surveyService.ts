@@ -58,7 +58,8 @@ export interface SaveSurveyProgressPayload {
   roofAssessment?: RoofAssessment;
   gpsLocation?: GpsLocation;
   roofPhotos?: SurveyPhoto[];
-  meterPhoto?: SurveyPhoto;
+  /** `null` removes the meter photo; leaving it out keeps what's saved. */
+  meterPhoto?: SurveyPhoto | null;
   electricityBillDocument?: SurveyDocument;
   notes?: string;
 }

@@ -331,6 +331,87 @@ function drawOffer(doc: Doc, q: PublicQuotation, lead: LeadDocument, ctx: Quotat
   return y;
 }
 
+// ───────────────────────────── SITE SURVEY PHOTOS ─────────────────────────────
+const ACRONYMS = new Set(["RCC"]);
+const labelCase = (value: string) =>
+  value
+    .split("_")
+    .map((w) => (ACRONYMS.has(w) ? w : `${w[0]}${w.slice(1).toLowerCase()}`))
+    .join(" ");
+
+/**
+ * Turns a stored `data:image/jpeg|png;base64,…` URI into bytes. Only validated data URIs are ever
+ * decoded — never handed to PDFKit as a string, which would treat anything else as a file path.
+ */
+function decodeImage(url: string): Buffer | null {
+  const comma = url.indexOf(",");
+  if (comma < 0 || !/^data:image\/(?:jpeg|png);base64$/i.test(url.slice(0, comma))) return null;
+  const bytes = Buffer.from(url.slice(comma + 1), "base64");
+  return bytes.length > 0 ? bytes : null;
+}
+
+/**
+ * One framed tile per photo (two per row), each photo scaled to fit whole inside its frame — never
+ * cropped, so a roof or meter shot stays fully visible — and flowing onto extra pages as needed.
+ * Prints nothing when the quotation has no photos.
+ */
+function drawSurveyPhotos(doc: Doc, q: PublicQuotation, survey: SurveyDocument | null | undefined) {
+  const photos = q.surveyImages ?? [];
+  if (photos.length === 0) return;
+
+  const ctx: [string, string] = ["Site survey", "photos"];
+  let y = newPage(doc, ctx[0], ctx[1], "Photos taken at your property during the site survey.");
+
+  const roof = survey?.roofAssessment;
+  if (survey && roof) {
+    const facts: Array<[string, string]> = [
+      ["Surveyed on", formatDateLabel(survey.date)],
+      ["Roof", `${labelCase(roof.roofType)} · ${rupee.format(roof.roofAreaSqft)} sq.ft`],
+      ["Condition", labelCase(roof.roofCondition)],
+      ["Shadow", labelCase(roof.shadowLevel)],
+      ["Meter", labelCase(roof.meterType)],
+    ];
+    card(doc, M, y, CW, 46, LIGHT_SKY);
+    const fw = CW / facts.length;
+    facts.forEach(([label, value], i) => {
+      f.reg(doc).fontSize(7.5).fillColor(MUTED).text(label, M + 14 + i * fw, y + 10, { width: fw - 16, lineBreak: false });
+      f.semi(doc).fontSize(9).fillColor(DEEP).text(value, M + 14 + i * fw, y + 24, { width: fw - 16, lineBreak: false });
+    });
+    y += 62;
+  }
+
+  const gap = 14;
+  const tileW = (CW - gap) / 2;
+  const frameH = 178;
+  const labelH = 22;
+  const rowH = frameH + labelH + gap;
+  const pad = 6;
+
+  for (let i = 0; i < photos.length; i += 2) {
+    if (y + frameH + labelH > bottom()) y = newPage(doc, ctx[0], ctx[1]);
+    for (let col = 0; col < 2 && i + col < photos.length; col++) {
+      const n = i + col;
+      const x = M + col * (tileW + gap);
+      card(doc, x, y, tileW, frameH + labelH, "#FFFFFF");
+      const bytes = decodeImage(photos[n]!.url);
+      try {
+        if (!bytes) throw new Error("unsupported image");
+        doc.save();
+        doc.roundedRect(x + 1, y + 1, tileW - 2, frameH - 2, 9).clip();
+        doc.rect(x, y, tileW, frameH).fill("#EEF2F7");
+        doc.image(bytes, x + pad, y + pad, { fit: [tileW - pad * 2, frameH - pad * 2], align: "center", valign: "center" });
+        doc.restore();
+      } catch {
+        // A photo PDFKit can't decode must not take the whole quotation down — leave a visible placeholder instead.
+        doc.restore();
+        f.reg(doc).fontSize(8.5).fillColor(MUTED).text("Photo unavailable", x, y + frameH / 2 - 5, { width: tileW, align: "center", lineBreak: false });
+      }
+      f.reg(doc).fontSize(8.3).fillColor(MUTED).text(`Photo ${n + 1} of ${photos.length}`, x + 12, y + frameH + 6, { width: tileW - 24, lineBreak: false });
+    }
+    y += rowH;
+  }
+}
+
 // ───────────────────────────── PAGE 3 — BILL OF MATERIALS ─────────────────────────────
 function drawBom(doc: Doc, q: PublicQuotation) {
   let y = newPage(doc, "Bill of", "materials", "What is included in your rooftop system price.");
@@ -618,6 +699,7 @@ export function renderQuotationPdf(quotation: PublicQuotation, lead: LeadDocumen
 
   drawCover(doc, quotation, lead, kw);
   drawOffer(doc, quotation, lead, ctx, kw);
+  drawSurveyPhotos(doc, quotation, ctx.survey);
   drawBom(doc, quotation);
   drawSavings(doc, quotation, lead, kw);
   drawFinancing(doc, quotation);

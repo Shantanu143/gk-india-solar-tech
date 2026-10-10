@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Label";
 import { Modal } from "@/features/crm/components/Modal";
 import { useLeads } from "@/features/leads/hooks/useLeads";
-import { QUOTABLE_LEAD_STATUSES } from "@/features/leads/utils/leadWorkflow";
+import { useAuth } from "@/features/crm/hooks/authContext";
+import { QUOTABLE_LEAD_STATUSES, QUOTABLE_WITHOUT_SURVEY_LEAD_STATUSES } from "@/features/leads/utils/leadWorkflow";
 import { useCreateQuotation } from "@/features/quotations/hooks/useQuotationMutations";
 import { ApiError } from "@/services/apiClient";
 
@@ -15,14 +16,20 @@ interface CreateQuotationModalProps {
 }
 
 /**
- * A lead can be quoted from any stage before it has a quotation — the site survey is optional.
- * Creating a quotation immediately advances the lead to QUOTATION_PREPARED (see
- * `quotationService.createQuotation`), so filtering on the pre-quotation stages alone lists exactly
- * the leads eligible for a new quotation, no cross-check against existing quotations needed.
+ * Sales can only quote a lead once its site survey is completed (and the engineer has uploaded the
+ * photos — the server checks that); an admin can quote a lead at any stage. Creating a quotation
+ * immediately advances the lead to QUOTATION_PREPARED (see `quotationService.createQuotation`), so
+ * filtering on the pre-quotation stages alone lists exactly the leads eligible for a new quotation,
+ * no cross-check against existing quotations needed.
  */
 export function CreateQuotationModal({ open, onOpenChange, detailPath }: CreateQuotationModalProps) {
   const navigate = useNavigate();
-  const { data: eligibleLeads, isLoading } = useLeads({ statuses: QUOTABLE_LEAD_STATUSES, pageSize: 100 });
+  const { can } = useAuth();
+  const canSkipSurvey = can("quotations.createWithoutSurvey");
+  const { data: eligibleLeads, isLoading } = useLeads({
+    statuses: canSkipSurvey ? QUOTABLE_WITHOUT_SURVEY_LEAD_STATUSES : QUOTABLE_LEAD_STATUSES,
+    pageSize: 100,
+  });
   const createQuotation = useCreateQuotation();
   const [leadId, setLeadId] = useState("");
 
@@ -48,7 +55,11 @@ export function CreateQuotationModal({ open, onOpenChange, detailPath }: CreateQ
       open={open}
       onOpenChange={handleClose}
       title="Create Quotation"
-      description="Pick a lead to quote — the quotation is priced from its recommended solar system (or the final configuration, if a site survey was done)."
+      description={
+        canSkipSurvey
+          ? "Pick any lead — as admin you can quote on the spot, without waiting for the site survey. The quotation is priced from its final configuration (or its recommended solar system), and you can add photos before sending."
+          : "Pick a lead whose site survey is complete and whose photos the site engineer has uploaded. The quotation is priced from its final configuration (or its recommended solar system) and carries the survey photos."
+      }
       size="sm"
       footer={
         <>
@@ -66,7 +77,9 @@ export function CreateQuotationModal({ open, onOpenChange, detailPath }: CreateQ
         <p className="text-sm text-muted-foreground">Loading eligible leads…</p>
       ) : leads.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No leads are waiting for a quotation — every open lead already has one.
+          {canSkipSurvey
+            ? "No leads are waiting for a quotation — every open lead already has one."
+            : "No leads are waiting for a quotation — a lead appears here once its site survey is completed."}
         </p>
       ) : (
         <select

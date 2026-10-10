@@ -1,15 +1,18 @@
 import { Link, useLocation } from "react-router-dom";
 import { FileText } from "lucide-react";
 import { EmptyState } from "@/features/crm/components/EmptyState";
+import { useAuth } from "@/features/crm/hooks/authContext";
 import { SkeletonRows } from "@/features/crm/components/LoadingSkeleton";
 import { CRM_ROUTES } from "@/features/crm/utils/routes";
 import type { Lead } from "@/features/leads/types/lead";
 import { QuotationStatusBadge } from "@/features/quotations/components/QuotationStatusBadge";
 import { useQuotationForLead } from "@/features/quotations/hooks/useQuotation";
+import { isAwaitingSurvey } from "@/features/leads/utils/leadWorkflow";
 import { formatDate, formatInr } from "@/lib/format";
 
 export function LeadQuotationTab({ lead }: { lead: Lead }) {
   const { pathname } = useLocation();
+  const { can } = useAuth();
   const isAdmin = pathname.startsWith("/admin");
   const { data: quotation, isLoading } = useQuotationForLead(lead.id);
 
@@ -20,7 +23,11 @@ export function LeadQuotationTab({ lead }: { lead: Lead }) {
       <EmptyState
         icon={FileText}
         title="No quotation yet"
-        description="Use Generate Quotation in the actions above to prepare one for this lead — no site survey needed."
+        description={
+          isAwaitingSurvey(lead.status) && !can("quotations.createWithoutSurvey")
+            ? "A site survey has to be completed first, with its photos uploaded by the site engineer. Once that's done, use Generate Quotation in the actions above."
+            : "Use Generate Quotation in the actions above to prepare one for this lead."
+        }
       />
     );
   }

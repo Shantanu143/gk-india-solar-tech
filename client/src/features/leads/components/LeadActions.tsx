@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/features/crm/hooks/authContext";
 import { CRM_ROUTES } from "@/features/crm/utils/routes";
 import type { Lead, LeadStatus } from "@/features/leads/types/lead";
-import { canCreateQuotation } from "@/features/leads/utils/leadWorkflow";
+import { canCreateQuotation, isAwaitingSurvey } from "@/features/leads/utils/leadWorkflow";
 import { useCreateQuotation } from "@/features/quotations/hooks/useQuotationMutations";
+import { useSurveyForLead } from "@/features/surveys/hooks/useSurvey";
 import { ApiError } from "@/services/apiClient";
 
 interface LeadActionsProps {
@@ -20,7 +21,7 @@ type PrimaryAction = "call" | "followUp" | "quotation";
 
 function primaryActionFor(status: LeadStatus): PrimaryAction {
   if (status === "NEW") return "call";
-  if (status === "SURVEY_REQUESTED" || status === "SURVEY_COMPLETED") return "quotation";
+  if (status === "SURVEY_COMPLETED") return "quotation";
   return "followUp";
 }
 
@@ -42,10 +43,17 @@ export function LeadActions({ lead, onAssign, onAddFollowUp, onScheduleSurvey }:
     });
   }
 
-  // A survey can still be requested from FOLLOW_UP, but it's optional: a quotation can be generated
-  // from any stage before one exists.
+  // Sales follows the pipeline: the survey is requested from FOLLOW_UP, and a quotation can only be
+  // generated once it's completed and the site engineer has uploaded its photos. Admin can quote on the spot at any stage.
+  const canSkipSurvey = can("quotations.createWithoutSurvey");
   const canRequestSurvey = lead.status === "FOLLOW_UP";
-  const canGenerateQuotation = canCreateQuotation(lead.status);
+  const canGenerateQuotation = canCreateQuotation(lead.status, canSkipSurvey);
+  const waitingOnSurvey = !canSkipSurvey && isAwaitingSurvey(lead.status) && can("quotations.create");
+  // Only worth loading the survey (its photos can be large) when the answer decides whether the button is usable.
+  const checkPhotos = !canSkipSurvey && lead.status === "SURVEY_COMPLETED" && can("quotations.create");
+  const { data: survey, isLoading: surveyLoading } = useSurveyForLead(checkPhotos ? lead.id : undefined);
+  const surveyPhotoCount = (survey?.roofPhotos.length ?? 0) + (survey?.meterPhoto ? 1 : 0);
+  const awaitingPhotos = checkPhotos && !surveyLoading && surveyPhotoCount === 0;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -95,12 +103,24 @@ export function LeadActions({ lead, onAssign, onAddFollowUp, onScheduleSurvey }:
           variant={primary === "quotation" ? "primary" : "secondary"}
           size="sm"
           className="gap-1.5"
-          disabled={createQuotation.isPending}
+          disabled={createQuotation.isPending || awaitingPhotos}
           onClick={handleGenerateQuotation}
         >
           <FileText className="h-4 w-4" aria-hidden="true" />
           {createQuotation.isPending ? "Generating…" : "Generate Quotation"}
         </Button>
+      )}
+      {awaitingPhotos && (
+        <p className="w-full text-xs text-muted-foreground">
+          Waiting for the site engineer to upload the survey photos — you can generate the quotation once they have.
+        </p>
+      )}
+      {waitingOnSurvey && (
+        <p className="w-full text-xs text-muted-foreground">
+          {lead.status === "SURVEY_REQUESTED"
+            ? "The site survey is scheduled — once the site engineer completes it and uploads the photos, you can generate the quotation."
+            : "Send the site engineer for a survey first — a quotation can be generated once the survey is done and its photos are uploaded."}
+        </p>
       )}
       {createQuotation.isError && (
         <p className="w-full text-xs text-error">

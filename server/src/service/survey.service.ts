@@ -5,7 +5,14 @@ import { leadService } from "./lead.service";
 import { notificationService } from "./notification.service";
 import { ApiError } from "../util/ApiError";
 import { toPublicSurvey, type PublicSurvey } from "../util/serializeSurvey";
-import type { GpsLocation, RoofAssessment, SurveyDocumentFile, SurveyPhoto } from "../models/Survey.model";
+import type { GpsLocation, RoofAssessment, SurveyDocument, SurveyDocumentFile, SurveyPhoto } from "../models/Survey.model";
+import type { UserRole } from "../models/User.model";
+
+/** The signed-in user performing a survey action. */
+export interface SurveyActor {
+  id: string;
+  role: UserRole;
+}
 
 export interface ScheduleSurveyInput {
   leadId: string;
@@ -17,16 +24,28 @@ export interface ScheduleSurveyInput {
 
 export interface SaveSurveyProgressInput {
   id: string;
+  actor: SurveyActor;
   roofAssessment?: RoofAssessment;
   gpsLocation?: GpsLocation;
   roofPhotos?: SurveyPhoto[];
-  meterPhoto?: SurveyPhoto;
+  /** `null` removes the meter photo; leaving it out keeps what's saved. */
+  meterPhoto?: SurveyPhoto | null;
   electricityBillDocument?: SurveyDocumentFile;
   notes?: string;
 }
 
 export interface CompleteSurveyInput extends SaveSurveyProgressInput {
   actorName: string;
+}
+
+/**
+ * Fieldwork — starting the survey, filling it in, uploading its photos, completing it — belongs to the
+ * site engineer it was assigned to; an admin can step in for anyone. Sales schedules the survey but
+ * doesn't carry it out, so the photos in a quotation always come from the engineer (or an admin).
+ */
+function assertCanPerformSurvey(survey: SurveyDocument, actor: SurveyActor): void {
+  if (actor.role === "ADMIN" || survey.engineerId.toString() === actor.id) return;
+  throw ApiError.forbidden("Only the assigned site engineer (or an admin) can carry out this survey.");
 }
 
 async function findRelevantLeadIds(employeeId: string): Promise<string[]> {
@@ -82,9 +101,10 @@ export const surveyService = {
     return toPublicSurvey(survey);
   },
 
-  async startSurvey(id: string): Promise<PublicSurvey> {
+  async startSurvey(id: string, actor: SurveyActor): Promise<PublicSurvey> {
     const survey = await surveyRepository.findById(id);
     if (!survey) throw ApiError.notFound("Survey not found.");
+    assertCanPerformSurvey(survey, actor);
 
     survey.status = "IN_PROGRESS";
     survey.startedAt = new Date();
@@ -95,11 +115,12 @@ export const surveyService = {
   async saveSurveyProgress(input: SaveSurveyProgressInput) {
     const survey = await surveyRepository.findById(input.id);
     if (!survey) throw ApiError.notFound("Survey not found.");
+    assertCanPerformSurvey(survey, input.actor);
 
     if (input.roofAssessment) survey.roofAssessment = input.roofAssessment;
     if (input.gpsLocation) survey.gpsLocation = input.gpsLocation;
     if (input.roofPhotos) survey.roofPhotos = input.roofPhotos;
-    if (input.meterPhoto) survey.meterPhoto = input.meterPhoto;
+    if (input.meterPhoto !== undefined) survey.meterPhoto = input.meterPhoto ?? undefined;
     if (input.electricityBillDocument) survey.electricityBillDocument = input.electricityBillDocument;
     if (input.notes !== undefined) survey.notes = input.notes;
     await survey.save();

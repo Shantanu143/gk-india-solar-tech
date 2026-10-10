@@ -18,6 +18,10 @@ export type Permission =
   | "surveys.create"
   | "quotations.view"
   | "quotations.create"
+  /** Generate a quotation at any lead stage, without waiting for the site survey (admin on-the-spot quoting). */
+  | "quotations.createWithoutSurvey"
+  /** Upload / remove photos directly on a quotation (everyone else gets the site engineer's survey photos automatically). */
+  | "quotations.managePhotos"
   | "products.view"
   | "products.manage"
   | "customers.view"
@@ -50,6 +54,8 @@ const ROLE_PERMISSIONS: Record<EmployeeRole, Permission[]> = {
     "surveys.create",
     "quotations.view",
     "quotations.create",
+    "quotations.createWithoutSurvey",
+    "quotations.managePhotos",
     "products.view",
     "products.manage",
     "customers.view",

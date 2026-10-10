@@ -1,6 +1,6 @@
 import { apiRequest, apiRequestBlob } from "@/services/apiClient";
 import type { PaginatedResult } from "@/features/crm/types/api";
-import type { Quotation, QuotationItem, QuotationStatus, SendQuotationResult } from "@/features/quotations/types/quotation";
+import type { Quotation, QuotationImage, QuotationItem, QuotationStatus, SendQuotationResult } from "@/features/quotations/types/quotation";
 
 export interface GetQuotationsParams {
   status?: QuotationStatus;
@@ -34,6 +34,8 @@ export async function createQuotation(leadId: string): Promise<Quotation> {
 export interface UpdateQuotationItemsPayload {
   id: string;
   items: Omit<QuotationItem, "id">[];
+  /** Replaces the quotation's photos when given; leave out to keep what is saved. */
+  surveyImages?: QuotationImage[];
   discountAmount?: number;
   validUntil?: string;
   notes?: string;
