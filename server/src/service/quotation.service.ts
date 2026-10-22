@@ -23,7 +23,7 @@ import { AWAITING_SURVEY_LEAD_STATUSES, QUOTABLE_LEAD_STATUSES, QUOTABLE_WITHOUT
 import { can } from "../util/permissions";
 import { collectSurveyPhotos, mergePhotos } from "../util/quotationPhotos";
 import { LEAD_STATUS_LABEL } from "../util/leadStatusLabels";
-import type { ProductDocument, ProductCategory } from "../models/Product.model";
+import type { ProductDocument } from "../models/Product.model";
 import type { QuotationImage } from "../models/Quotation.model";
 import type { UserRole } from "../models/User.model";
 import type { LeadDocument, ProjectType, LostReason } from "../models/Lead.model";
@@ -100,30 +100,37 @@ async function buildItemsFromSystemSpec(config: SystemSpec): Promise<QuotationIt
     productRepository.listActiveByCategory("STRUCTURE"),
   ]);
 
-  function makeItem(category: ProductCategory, description: string, quantity: number, match: ProductDocument | undefined): QuotationItemInput {
-    const unitPrice = match?.unitPrice ?? 0;
-    return { productId: match?._id ?? null, description, category, quantity, unitPrice, amount: quantity * unitPrice };
-  }
-
   const panelMatch = findBestMatch(panels, "wattage", String(config.panelWattage));
   const inverterMatch = findBestMatch(inverters, "capacityKw", String(config.inverterCapacityKw));
+  const structureMatch = structures[0];
 
-  const items = [
-    makeItem("PANEL", `${config.panelModel} Solar Panel`, config.numberOfPanels, panelMatch),
-    makeItem("INVERTER", `${config.inverterCapacityKw} kW Solar Inverter`, 1, inverterMatch),
-    makeItem("STRUCTURE", config.structureType, 1, structures[0]),
-  ];
-  if (items.reduce((sum, item) => sum + item.amount, 0) > 0) return items;
-
-  // The catalog has no prices yet — fall back to the standard rooftop price list so the draft is
-  // still a realistic starting point. The preparer can edit every line before sending.
+  // Standard rooftop system price list defines the exact package price for each capacity.
   const total = systemPriceFor(config.systemCapacityKw);
-  const priced = (item: QuotationItemInput, share: number): QuotationItemInput => {
-    const amount = Math.round(total * share);
-    return { ...item, unitPrice: Math.round(amount / item.quantity), amount: Math.round(amount / item.quantity) * item.quantity };
+  const panelItem: QuotationItemInput = {
+    productId: panelMatch?._id ?? null,
+    description: `${config.panelModel} Solar Panel`,
+    category: "PANEL",
+    quantity: config.numberOfPanels,
+    unitPrice: 0,
+    amount: 0,
   };
-  const [panel, inverter, structure] = items as [QuotationItemInput, QuotationItemInput, QuotationItemInput];
-  const bos: QuotationItemInput = {
+  const inverterItem: QuotationItemInput = {
+    productId: inverterMatch?._id ?? null,
+    description: `${config.inverterCapacityKw} kW Solar Inverter`,
+    category: "INVERTER",
+    quantity: 1,
+    unitPrice: 0,
+    amount: 0,
+  };
+  const structureItem: QuotationItemInput = {
+    productId: structureMatch?._id ?? null,
+    description: config.structureType,
+    category: "STRUCTURE",
+    quantity: 1,
+    unitPrice: 0,
+    amount: 0,
+  };
+  const bosItem: QuotationItemInput = {
     productId: null,
     description: "Cables, protection, earthing, net-metering, installation & commissioning",
     category: "ACCESSORY",
@@ -131,9 +138,21 @@ async function buildItemsFromSystemSpec(config: SystemSpec): Promise<QuotationIt
     unitPrice: 0,
     amount: 0,
   };
-  const partial = [priced(panel, PRICE_SPLIT.panels), priced(inverter, PRICE_SPLIT.inverter), priced(structure, PRICE_SPLIT.structure)];
-  const remainder = total - partial.reduce((sum, item) => sum + item.amount, 0);
-  return [...partial, { ...bos, unitPrice: remainder, amount: remainder }];
+
+  const priced = (item: QuotationItemInput, share: number): QuotationItemInput => {
+    const amount = Math.round(total * share);
+    const unitPrice = Math.round(amount / item.quantity);
+    return { ...item, unitPrice, amount: unitPrice * item.quantity };
+  };
+
+  const pPanel = priced(panelItem, PRICE_SPLIT.panels);
+  const pInverter = priced(inverterItem, PRICE_SPLIT.inverter);
+  const pStructure = priced(structureItem, PRICE_SPLIT.structure);
+  const subtotalSoFar = pPanel.amount + pInverter.amount + pStructure.amount;
+  const remainder = total - subtotalSoFar;
+  const pBos = { ...bosItem, unitPrice: remainder, amount: remainder };
+
+  return [pPanel, pInverter, pStructure, pBos];
 }
 
 function computeTotals(items: QuotationItemInput[], subsidyAmount: number, discountAmount: number) {

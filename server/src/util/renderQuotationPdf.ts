@@ -512,13 +512,15 @@ function drawSavings(doc: Doc, q: PublicQuotation, lead: LeadDocument, kw: numbe
   y = ensure(doc, y, 60 + SYSTEM_PRICE_LIST.length * 6, "Your", "savings");
   f.bold(doc).fontSize(12).fillColor(TEXT).text("Standard rooftop system price guide", M, y);
   y += 18;
-  const chipW = (CW - 6 * 8) / 7;
+  const chipCount = SYSTEM_PRICE_LIST.length;
+  const gap = 5;
+  const chipW = (CW - (chipCount - 1) * gap) / chipCount;
   SYSTEM_PRICE_LIST.forEach((row, i) => {
-    const x = M + i * (chipW + 8);
+    const x = M + i * (chipW + gap);
     const active = row.kw === Math.round(kw);
-    doc.roundedRect(x, y, chipW, 54, 8).fillAndStroke(active ? DEEP : "#FFFFFF", active ? DEEP : BORDER);
-    f.bold(doc).fontSize(11).fillColor(active ? "#FFFFFF" : SKY).text(`${row.kw} kW`, x, y + 9, { width: chipW, align: "center" });
-    f.semi(doc).fontSize(7.6).fillColor(active ? "#FFFFFF" : TEXT).text(inr(row.price), x, y + 30, { width: chipW, align: "center" });
+    doc.roundedRect(x, y, chipW, 54, 7).fillAndStroke(active ? DEEP : "#FFFFFF", active ? DEEP : BORDER);
+    f.bold(doc).fontSize(10).fillColor(active ? "#FFFFFF" : SKY).text(`${row.kw} kW`, x, y + 9, { width: chipW, align: "center" });
+    f.semi(doc).fontSize(7).fillColor(active ? "#FFFFFF" : TEXT).text(inr(row.price), x, y + 30, { width: chipW, align: "center" });
   });
   y += 62;
   f.reg(doc).fontSize(7.8).fillColor(MUTED).text("Indicative prices inclusive of GST, before subsidy. Final price is confirmed after the site survey.", M, y, { width: CW });

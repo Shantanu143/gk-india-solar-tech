@@ -23,6 +23,8 @@ export const AVERAGE_TARIFF_PER_UNIT = 8;
 
 /** Standard rooftop price list (Rs., incl. GST, before subsidy). Used as a fallback when the product catalog has no prices. */
 export const SYSTEM_PRICE_LIST: ReadonlyArray<{ kw: number; price: number }> = [
+  { kw: 1, price: 90000 },
+  { kw: 2, price: 155000 },
   { kw: 3, price: 195500 },
   { kw: 4, price: 242500 },
   { kw: 5, price: 296000 },
@@ -62,6 +64,8 @@ export interface SystemGuideRow {
 }
 
 export const SYSTEM_GUIDE: ReadonlyArray<SystemGuideRow> = [
+  { kw: 1, unitsPerDay: 5, unitsPerMonth: 150, runs: "2-3 LED lights, 1-2 fans, TV, mobile/laptop charging", bestFor: "Monthly bill of Rs. 800 - 1,500" },
+  { kw: 2, unitsPerDay: 10, unitsPerMonth: 300, runs: "3-4 LED lights, 2-3 fans, TV, fridge, air cooler", bestFor: "Monthly bill of Rs. 1,500 - 2,500" },
   { kw: 3, unitsPerDay: 15, unitsPerMonth: 450, runs: "1 inverter AC, 2-3 fans, TV, fridge, lights, water pump, washing machine, cooler", bestFor: "Monthly bill of Rs. 2,000 - 3,000" },
   { kw: 5, unitsPerDay: 25, unitsPerMonth: 750, runs: "1-2 inverter ACs, 3-4 fans, TV, fridge, lights, water pump, cooler, washing machine, geyser", bestFor: "Monthly bill of Rs. 4,000 - 6,000" },
   { kw: 6, unitsPerDay: 30, unitsPerMonth: 900, runs: "2 ACs, 4-5 fans, TV, fridge, lights, water pump, cooler, washing machine, motor", bestFor: "Monthly bill of Rs. 6,000 - 8,000" },

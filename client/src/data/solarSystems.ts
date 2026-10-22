@@ -28,6 +28,8 @@ export interface SystemPrice {
 
 /** Keep in step with `SYSTEM_PRICE_LIST` in server/src/config/company.ts (used on the quotation PDF). */
 export const systemPrices: SystemPrice[] = [
+  { kw: 1, price: 90000 },
+  { kw: 2, price: 155000 },
   { kw: 3, price: 195500 },
   { kw: 4, price: 242500 },
   { kw: 5, price: 296000 },
@@ -36,6 +38,26 @@ export const systemPrices: SystemPrice[] = [
   { kw: 8, price: 443000 },
   { kw: 10, price: 511000 },
 ];
+
+/** Price for an arbitrary size: exact match, else linear interpolation, else extrapolate. */
+export function systemPriceFor(kw: number): number {
+  const exact = systemPrices.find((row) => row.kw === kw);
+  if (exact) return exact.price;
+
+  const first = systemPrices[0]!;
+  const last = systemPrices[systemPrices.length - 1]!;
+  if (kw < first.kw) return Math.round((first.price / first.kw) * kw);
+  if (kw > last.kw) {
+    const secondLast = systemPrices[systemPrices.length - 2]!;
+    return Math.round(last.price + ((last.price - secondLast.price) / (last.kw - secondLast.kw)) * (kw - last.kw));
+  }
+
+  const upperIndex = systemPrices.findIndex((row) => row.kw > kw);
+  const lower = systemPrices[upperIndex - 1]!;
+  const upper = systemPrices[upperIndex]!;
+  const ratio = (kw - lower.kw) / (upper.kw - lower.kw);
+  return Math.round(lower.price + (upper.price - lower.price) * ratio);
+}
 
 export function formatRupees(amount: number): string {
   return `₹${amount.toLocaleString("en-IN")}`;

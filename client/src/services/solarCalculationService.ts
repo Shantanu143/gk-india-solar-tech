@@ -1,5 +1,6 @@
 import { mockDelay } from "./apiClient";
 import { SOLAR_CONFIG } from "@/config/solarConfig";
+import { systemPriceFor } from "@/data/solarSystems";
 import type { ProjectType, SolarCalculationInput, SolarCalculationResult } from "@/types/solarEstimate";
 
 function roundToStep(value: number, step: number): number {
@@ -54,7 +55,7 @@ export async function calculateSolarRecommendation(input: SolarCalculationInput)
   const annualSaving = monthlySaving * 12;
   const lifetimeSaving = annualSaving * SOLAR_CONFIG.systemLifetimeYears;
 
-  const estimatedProjectCost = Math.round(recommendedCapacity * SOLAR_CONFIG.costPerKw);
+  const estimatedProjectCost = systemPriceFor(recommendedCapacity);
   const { eligibleCapacity, estimatedSubsidy } = calculateSubsidy(recommendedCapacity, input.projectType);
   const estimatedEffectiveCost = estimatedProjectCost - estimatedSubsidy;
 
