@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Download, Mail, Plus, Trash2, XCircle } from "lucide-react";
+import { CheckCircle2, Download, Mail, Pencil, Plus, Trash2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -68,7 +68,7 @@ export function QuotationBuilderView({ quotationId, leadDetailPath }: QuotationB
   // Keyed on the quotation id so navigating between two different quotations remounts this with
   // fresh local edit state, while a background refetch of the SAME quotation (e.g. after our own
   // save) doesn't wipe out in-progress edits.
-  return <QuotationBuilder key={quotation.id} quotation={quotation} lead={lead} leadDetailPath={leadDetailPath} />;
+  return <QuotationBuilder key={`${quotation.id}-${quotation.updatedAt}`} quotation={quotation} lead={lead} leadDetailPath={leadDetailPath} />;
 }
 
 interface QuotationBuilderProps {
@@ -101,7 +101,12 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
 
   const isDraft = quotation.status === "DRAFT";
   const isSent = quotation.status === "SENT";
+  const isAccepted = quotation.status === "ACCEPTED";
+  const isRejected = quotation.status === "REJECTED";
   const canEdit = can("quotations.create");
+  const [isEditing, setIsEditing] = useState(isDraft);
+  const isEditable = canEdit && !isAccepted && isEditing;
+
   // Admin curates a quotation's photos by hand; everyone else gets the site engineer's survey photos automatically.
   const canManagePhotos = can("quotations.managePhotos");
   const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
@@ -147,7 +152,22 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
   }
 
   function handleSaveDraft() {
-    updateItems.mutate({ id: quotation.id, items: itemsPayload(), ...photosPayload(), discountAmount, notes });
+    updateItems.mutate(
+      { id: quotation.id, items: itemsPayload(), ...photosPayload(), discountAmount, notes },
+      {
+        onSuccess: () => {
+          if (!isDraft) setIsEditing(false);
+        },
+      },
+    );
+  }
+
+  function handleCancelEdit() {
+    setItems(quotation.items);
+    setDiscountAmount(quotation.discountAmount);
+    setNotes(quotation.notes ?? "");
+    setSurveyImages(quotation.surveyImages ?? []);
+    setIsEditing(false);
   }
 
   const customerName = lead?.customer.fullName ?? "the customer";
@@ -238,6 +258,17 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
         }
       />
 
+      {isEditable && !isDraft && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-sky/30 bg-sky/5 px-4 py-3 text-sm text-navy">
+          <span>
+            <strong>Revising Quotation ({quotation.status}):</strong> Make your adjustments below. You can save changes or send the revised quotation directly to the customer.
+          </span>
+          <Button type="button" size="sm" variant="ghost" onClick={handleCancelEdit}>
+            Cancel Edit
+          </Button>
+        </div>
+      )}
+
       <GlassPanel className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse text-sm">
@@ -248,12 +279,12 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
                 <th className="px-4 py-3 text-right text-xs font-semibold tracking-wide text-muted-foreground uppercase">Qty</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold tracking-wide text-muted-foreground uppercase">Unit Price</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold tracking-wide text-muted-foreground uppercase">Amount</th>
-                {isDraft && canEdit && <th className="px-4 py-3" />}
+                {isEditable && <th className="px-4 py-3" />}
               </tr>
             </thead>
             <tbody>
               {items.map((item) =>
-                isDraft && canEdit ? (
+                isEditable ? (
                   <tr key={item.id} className="border-b border-border last:border-0">
                     <td className="px-4 py-2">
                       <Input
@@ -303,7 +334,7 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
           </table>
         </div>
 
-        {isDraft && canEdit && (
+        {isEditable && (
           <div className="border-t border-border px-4 py-3">
             <Button type="button" variant="secondary" size="sm" className="gap-1.5" onClick={addItem}>
               <Plus className="h-4 w-4" aria-hidden="true" />
@@ -325,7 +356,7 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
           )}
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Discount</span>
-            {isDraft && canEdit ? (
+            {isEditable ? (
               <Input
                 type="number"
                 min="0"
@@ -339,7 +370,7 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
           </div>
           <div className="mt-1 flex justify-between border-t border-border pt-2 text-base">
             <span className="font-bold text-navy">Total Payable</span>
-            <span className="font-bold text-navy">{formatInr(isDraft ? totalAmount : quotation.totalAmount)}</span>
+            <span className="font-bold text-navy">{formatInr(isEditable ? totalAmount : quotation.totalAmount)}</span>
           </div>
           {quotation.emiEstimate && (
             <p className="mt-1 text-xs text-muted-foreground">
@@ -352,7 +383,7 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
 
       <GlassPanel className="p-4">
         <Label htmlFor="quotation-notes">Notes</Label>
-        {isDraft && canEdit ? (
+        {isEditable ? (
           <Textarea id="quotation-notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes for the customer…" />
         ) : (
           <p className="text-sm text-foreground/80">{quotation.notes || "—"}</p>
@@ -361,85 +392,134 @@ function QuotationBuilder({ quotation, lead, leadDetailPath }: QuotationBuilderP
 
       <QuotationPhotosPanel
         // Once sent, the photos are whatever was frozen onto the quotation (it may have gained the engineer's late uploads).
-        images={isDraft ? surveyImages : (quotation.surveyImages ?? [])}
-        editable={isDraft && canEdit && canManagePhotos}
-        isDraft={isDraft}
+        images={isEditable ? surveyImages : (quotation.surveyImages ?? [])}
+        editable={isEditable && canManagePhotos}
+        isDraft={isEditable}
         onChange={setSurveyImages}
         surveyPhotos={surveyPhotos}
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        {isDraft && canEdit && (
+        {isEditable ? (
           <>
             <Button type="button" variant="secondary" disabled={isMutating || hasInvalidItems} onClick={handleSaveDraft}>
-              {updateItems.isPending ? "Saving…" : "Save Draft"}
+              {updateItems.isPending ? "Saving…" : isDraft ? "Save Draft" : "Save Changes"}
             </Button>
-            <Button type="button" className="gap-1.5" disabled={isMutating || items.length === 0 || hasInvalidItems} onClick={handleSend}>
-              <WhatsAppIcon className="h-4 w-4" />
-              {sendQuotation.isPending ? "Sending…" : "Send on WhatsApp"}
-            </Button>
-          </>
-        )}
-
-        {isSent && canEdit && (
-          <>
             <Button
               type="button"
-              className="gap-1.5 bg-green hover:bg-green/90"
-              disabled={acceptQuotation.isPending}
-              onClick={() => acceptQuotation.mutate(quotation.id)}
+              className="gap-1.5"
+              disabled={isMutating || items.length === 0 || hasInvalidItems}
+              onClick={handleSend}
             >
-              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-              {acceptQuotation.isPending ? "Accepting…" : "Mark Accepted"}
-            </Button>
-            <Button type="button" variant="secondary" className="gap-1.5 text-error" onClick={() => setRejectOpen(true)}>
-              <XCircle className="h-4 w-4" aria-hidden="true" />
-              Mark Rejected
-            </Button>
-          </>
-        )}
-
-        {!isDraft && (
-          <Button type="button" variant="secondary" className="gap-1.5" disabled={downloading} onClick={handleDownload}>
-            <Download className="h-4 w-4" aria-hidden="true" />
-            {downloading ? "Preparing…" : "Download PDF"}
-          </Button>
-        )}
-
-        {!isDraft && lead && (
-          <>
-            <Button type="button" variant="secondary" className="gap-1.5" disabled={sendQuotation.isPending} onClick={deliver}>
               <WhatsAppIcon className="h-4 w-4" />
-              {sendQuotation.isPending ? "Sending…" : quotation.whatsappSentAt ? "Resend on WhatsApp" : "Send on WhatsApp"}
+              {sendQuotation.isPending
+                ? "Sending…"
+                : isDraft
+                  ? "Send on WhatsApp"
+                  : "Send Revised on WhatsApp"}
             </Button>
-            {lead.customer.email && (
-              <Button asChild variant="secondary" className="gap-1.5">
-                <a
-                  href={`mailto:${lead.customer.email}?subject=${encodeURIComponent(
-                    `Your Solar Quotation ${quotation.quotationNumber}`,
-                  )}&body=${encodeURIComponent(
-                    // mailto: can't attach files — link to the PDF when this session has its share link, else ask the sender to attach the downloaded PDF.
-                    `Hi ${lead.customer.fullName},\n\nYour solar quotation ${quotation.quotationNumber} is ready (${formatInr(quotation.totalAmount)} net effective price).\n\n${
-                      sentInfo ? `View / download the PDF: ${sentInfo.pdfUrl}\n\n` : ""
-                    }Thanks,\nGK India SolarTech`,
-                  )}`}
-                >
-                  <Mail className="h-4 w-4" aria-hidden="true" />
-                  Email Customer
-                </a>
+            {!isDraft && (
+              <Button type="button" variant="ghost" disabled={isMutating} onClick={handleCancelEdit}>
+                Cancel
               </Button>
+            )}
+          </>
+        ) : (
+          <>
+            {canEdit && !isAccepted && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="gap-1.5 text-navy hover:text-orange"
+                onClick={() => setIsEditing(true)}
+              >
+                <Pencil className="h-4 w-4" aria-hidden="true" />
+                {isSent || isRejected ? "Revise Quotation" : "Edit Quotation"}
+              </Button>
+            )}
+
+            {isSent && canEdit && (
+              <>
+                <Button
+                  type="button"
+                  className="gap-1.5 bg-green hover:bg-green/90"
+                  disabled={acceptQuotation.isPending}
+                  onClick={() => acceptQuotation.mutate(quotation.id)}
+                >
+                  <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                  {acceptQuotation.isPending ? "Accepting…" : "Mark Accepted"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="gap-1.5 text-error"
+                  onClick={() => setRejectOpen(true)}
+                >
+                  <XCircle className="h-4 w-4" aria-hidden="true" />
+                  Mark Rejected
+                </Button>
+              </>
+            )}
+
+            <Button
+              type="button"
+              variant="secondary"
+              className="gap-1.5"
+              disabled={downloading}
+              onClick={handleDownload}
+            >
+              <Download className="h-4 w-4" aria-hidden="true" />
+              {downloading ? "Preparing…" : "Download PDF"}
+            </Button>
+
+            {lead && (
+              <>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="gap-1.5"
+                  disabled={sendQuotation.isPending}
+                  onClick={deliver}
+                >
+                  <WhatsAppIcon className="h-4 w-4" />
+                  {sendQuotation.isPending
+                    ? "Sending…"
+                    : quotation.whatsappSentAt
+                      ? "Resend on WhatsApp"
+                      : "Send on WhatsApp"}
+                </Button>
+                {lead.customer.email && (
+                  <Button asChild variant="secondary" className="gap-1.5">
+                    <a
+                      href={`mailto:${lead.customer.email}?subject=${encodeURIComponent(
+                        `Your Solar Quotation ${quotation.quotationNumber}`,
+                      )}&body=${encodeURIComponent(
+                        // mailto: can't attach files — link to the PDF when this session has its share link, else ask the sender to attach the downloaded PDF.
+                        `Hi ${lead.customer.fullName},\n\nYour solar quotation ${quotation.quotationNumber} is ready (${formatInr(quotation.totalAmount)} net effective price).\n\n${
+                          sentInfo ? `View / download the PDF: ${sentInfo.pdfUrl}\n\n` : ""
+                        }Thanks,\nGK India SolarTech`,
+                      )}`}
+                    >
+                      <Mail className="h-4 w-4" aria-hidden="true" />
+                      Email Customer
+                    </a>
+                  </Button>
+                )}
+              </>
             )}
           </>
         )}
       </div>
 
-      {isDraft && canEdit && (
+      {isEditable && (
         <p className="text-xs text-muted-foreground">
-          "Send on WhatsApp" marks the quotation sent, moves the lead forward, and shares the PDF file itself — pick WhatsApp and the customer's chat in the share sheet and the PDF goes straight in. If this device can't attach files, it downloads the PDF and opens the chat so you can attach it.
+          {isDraft
+            ? '"Send on WhatsApp" marks the quotation sent, moves the lead forward, and shares the PDF file itself — pick WhatsApp and the customer\'s chat in the share sheet and the PDF goes straight in. If this device can\'t attach files, it downloads the PDF and opens the chat so you can attach it.'
+            : 'Sending on WhatsApp delivers the revised quotation PDF and reactivates the lead back to "Quotation Sent".'}
         </p>
       )}
 
-      {isDraft && hasInvalidItems && (
+      {isEditable && hasInvalidItems && (
         <p className="text-sm text-error">Every line item needs a description and a quantity greater than 0 before you can save or send this quotation.</p>
       )}
 

@@ -115,7 +115,7 @@ export const leadService = {
     const existing = await leadRepository.findById(input.leadId);
     if (!existing) throw ApiError.notFound("Lead not found.");
 
-    if (isTerminalLeadStatus(existing.status)) {
+    if (!input.skipWorkflowCheck && isTerminalLeadStatus(existing.status)) {
       throw ApiError.badRequest(`This lead is already ${LEAD_STATUS_LABEL[existing.status]} and cannot change status further.`);
     }
     if (!input.skipWorkflowCheck && !canTransitionLead(existing.status, input.status)) {
@@ -125,7 +125,7 @@ export const leadService = {
     const previousStatus = existing.status;
     const lead = await leadRepository.updateById(input.leadId, {
       status: input.status,
-      ...(input.status === "LOST" ? { lostReason: input.lostReason } : {}),
+      ...(input.status === "LOST" ? { lostReason: input.lostReason } : { $unset: { lostReason: 1 } }),
     });
     if (!lead) throw ApiError.notFound("Lead not found.");
 

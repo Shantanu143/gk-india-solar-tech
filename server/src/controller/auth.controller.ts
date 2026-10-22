@@ -19,24 +19,31 @@ function setRefreshCookie(res: Response, token: string): void {
     sameSite: isProduction ? "none" : "lax",
     maxAge: env.REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
     path: "/api/auth",
-  });
+    ...(isProduction ? { partitioned: true } : {}),
+  } as any);
 }
 
 function clearRefreshCookie(res: Response): void {
-  res.clearCookie(REFRESH_COOKIE_NAME, { path: "/api/auth" });
+  res.clearCookie(REFRESH_COOKIE_NAME, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    path: "/api/auth",
+    ...(isProduction ? { partitioned: true } : {}),
+  } as any);
 }
 
 export const authController = {
   signupCustomer: asyncHandler(async (req, res) => {
     const { user, accessToken, refreshToken } = await authService.signupCustomer(req.body);
     setRefreshCookie(res, refreshToken);
-    res.status(201).json({ user, accessToken });
+    res.status(201).json({ user, accessToken, refreshToken });
   }),
 
   employeeSetup: asyncHandler(async (req, res) => {
     const { user, accessToken, refreshToken } = await authService.employeeSetup(req.body);
     setRefreshCookie(res, refreshToken);
-    res.status(201).json({ user, accessToken });
+    res.status(201).json({ user, accessToken, refreshToken });
   }),
 
   employeeSetupStatus: asyncHandler(async (_req, res) => {
@@ -47,19 +54,25 @@ export const authController = {
   login: asyncHandler(async (req, res) => {
     const { user, accessToken, refreshToken } = await authService.login(req.body);
     setRefreshCookie(res, refreshToken);
-    res.json({ user, accessToken });
+    res.json({ user, accessToken, refreshToken });
   }),
 
   refresh: asyncHandler(async (req: Request, res: Response) => {
-    const token = req.cookies?.[REFRESH_COOKIE_NAME];
-    if (!token) throw ApiError.unauthorized();
+    const token =
+      req.cookies?.[REFRESH_COOKIE_NAME] ||
+      req.body?.refreshToken ||
+      (req.headers["x-refresh-token"] as string);
+    if (!token) throw ApiError.unauthorized("No refresh token provided.");
     const { user, accessToken, refreshToken } = await authService.refresh(token);
     setRefreshCookie(res, refreshToken);
-    res.json({ user, accessToken });
+    res.json({ user, accessToken, refreshToken });
   }),
 
   logout: asyncHandler(async (req: Request, res: Response) => {
-    const token = req.cookies?.[REFRESH_COOKIE_NAME];
+    const token =
+      req.cookies?.[REFRESH_COOKIE_NAME] ||
+      req.body?.refreshToken ||
+      (req.headers["x-refresh-token"] as string);
     if (token) await authService.logout(token);
     clearRefreshCookie(res);
     res.status(204).send();

@@ -286,7 +286,9 @@ export const quotationService = {
     }
     const existing = await quotationRepository.findById(input.id);
     if (!existing) throw ApiError.notFound("Quotation not found.");
-    if (existing.status !== "DRAFT") throw ApiError.badRequest("Only draft quotations can be edited.");
+    if (existing.status === "ACCEPTED") {
+      throw ApiError.badRequest("Accepted quotations cannot be edited.");
+    }
 
     const discountAmount = input.discountAmount ?? existing.discountAmount;
     const { subtotal, totalAmount, emiEstimate } = computeTotals(input.items, existing.subsidyAmount, discountAmount);
@@ -344,8 +346,8 @@ export const quotationService = {
   }): Promise<SendQuotationResult> {
     const existing = await quotationRepository.findById(input.id);
     if (!existing) throw ApiError.notFound("Quotation not found.");
-    if (existing.status !== "DRAFT" && existing.status !== "SENT") {
-      throw ApiError.badRequest("Only draft or sent quotations can be sent.");
+    if (existing.status === "ACCEPTED") {
+      throw ApiError.badRequest("Accepted quotations cannot be resent.");
     }
     const lead = await leadRepository.findById(existing.lead.toString());
     if (!lead) throw ApiError.notFound("Lead not found.");
@@ -372,17 +374,26 @@ export const quotationService = {
       shareToken,
       whatsappSentAt: now,
       ...(surveyImages ? { surveyImages } : {}),
-      ...(wasDraft ? { status: "SENT" as const, sentAt: now } : {}),
+      ...(wasDraft || existing.status === "REJECTED" ? { status: "SENT" as const, sentAt: now } : {}),
     });
     if (!updated) throw ApiError.notFound("Quotation not found.");
 
     const leadId = updated.lead.toString();
-    if (wasDraft) await leadService.updateLeadStatus({ leadId, status: "QUOTATION_SENT", actorName: input.actor.name });
+    if (wasDraft || existing.status === "REJECTED") {
+      await leadService.updateLeadStatus({
+        leadId,
+        status: "QUOTATION_SENT",
+        actorName: input.actor.name,
+        skipWorkflowCheck: true,
+      });
+    }
     await activityService.log({
       leadId,
       type: "QUOTATION_SENT",
       actorName: input.actor.name,
-      description: `Quotation ${updated.quotationNumber} sent to customer on WhatsApp`,
+      description: wasDraft
+        ? `Quotation ${updated.quotationNumber} sent to customer on WhatsApp`
+        : `Revised quotation ${updated.quotationNumber} resent to customer on WhatsApp`,
     });
 
     const customerNumber = lead.customer.whatsapp || lead.customer.mobile;

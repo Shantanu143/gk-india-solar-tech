@@ -1,9 +1,10 @@
-import { apiRequest, setAccessToken } from "@/services/apiClient";
+import { apiRequest, ApiError, setAccessToken } from "@/services/apiClient";
 import type { AuthUser } from "@/features/auth/types/auth";
 
 export interface AuthResponse {
   user: AuthUser;
   accessToken: string;
+  refreshToken?: string;
 }
 
 export interface SignupCustomerPayload {
@@ -25,10 +26,35 @@ export interface LoginPayload {
   password: string;
 }
 
-/** Stores the new access token in memory as a side effect — every call below goes through this. */
+const REFRESH_TOKEN_STORAGE_KEY = "gk_refresh_token";
+
+export function getStoredRefreshToken(): string | null {
+  try {
+    return localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredRefreshToken(token: string | null): void {
+  try {
+    if (token) {
+      localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, token);
+    } else {
+      localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore restricted/private browsing storage errors
+  }
+}
+
+/** Stores the new access token in memory and refresh token in local storage as a side effect. */
 function withStoredToken(request: Promise<AuthResponse>): Promise<AuthResponse> {
   return request.then((result) => {
     setAccessToken(result.accessToken);
+    if (result.refreshToken) {
+      setStoredRefreshToken(result.refreshToken);
+    }
     return result;
   });
 }
@@ -59,19 +85,44 @@ export const authApi = {
     return withStoredToken(apiRequest<AuthResponse>("/auth/login", { method: "POST", body: JSON.stringify(payload) }));
   },
 
-  /** Silent session restore — relies solely on the httpOnly refresh cookie, no body needed. */
+  /** Silent session restore — uses httpOnly cookie + local storage token fallback if 3rd-party cookies are blocked. */
   refresh() {
     if (!inFlightRefresh) {
-      inFlightRefresh = withStoredToken(apiRequest<AuthResponse>("/auth/refresh", { method: "POST" })).finally(() => {
-        inFlightRefresh = null;
-      });
+      const stored = getStoredRefreshToken();
+      inFlightRefresh = withStoredToken(
+        apiRequest<AuthResponse>("/auth/refresh", {
+          method: "POST",
+          body: JSON.stringify(stored ? { refreshToken: stored } : {}),
+          headers: stored ? { "x-refresh-token": stored } : {},
+        }),
+      )
+        .catch((err) => {
+          if (err instanceof ApiError && err.status === 401) {
+            setStoredRefreshToken(null);
+          }
+          throw err;
+        })
+        .finally(() => {
+          inFlightRefresh = null;
+        });
     }
     return inFlightRefresh;
   },
 
   async logout() {
-    await apiRequest<void>("/auth/logout", { method: "POST" });
-    setAccessToken(null);
+    const stored = getStoredRefreshToken();
+    try {
+      await apiRequest<void>("/auth/logout", {
+        method: "POST",
+        body: JSON.stringify(stored ? { refreshToken: stored } : {}),
+        headers: stored ? { "x-refresh-token": stored } : {},
+      });
+    } catch {
+      // Ignore network errors on logout
+    } finally {
+      setStoredRefreshToken(null);
+      setAccessToken(null);
+    }
   },
 
   me() {
