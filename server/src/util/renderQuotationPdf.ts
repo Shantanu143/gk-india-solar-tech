@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import path from "node:path";
 import PDFDocument from "pdfkit";
 import type { PublicQuotation } from "./serializeQuotation";
 import type { LeadDocument } from "../models/Lead.model";
@@ -11,16 +10,27 @@ import {
   AVERAGE_TARIFF_PER_UNIT,
   COMPANY,
   CUSTOMER_RESPONSIBILITIES,
-  JOURNEY_STEPS,
   NOT_COVERED,
   PAYMENT_TERMS,
   QUOTATION_TERMS,
-  SYSTEM_GUIDE,
-  SYSTEM_PRICE_LIST,
   UNITS_PER_KW_PER_DAY,
-  WARRANTY_TABLE,
   WHAT_YOU_GET,
 } from "../config/company";
+import {
+  BORDER, COVER_IMAGE, CW, DEEP, FONT, GREEN, H, LIGHT_SKY, LOGO, M, MUTED, ORANGE, SKY, TEXT, W, FOOTER_H,
+  bottom, card, ensure, f, fitLine, inr, newPage, numberedList, pageBackground, pageTitle, rupee, table,
+  type Doc,
+} from "./pdfLayout";
+import { drawIllustration, type IconName } from "./pdfIllustrations";
+import {
+  drawHowItWorks,
+  drawJourney,
+  drawLongTermSavings,
+  drawMilestones,
+  drawSizingGuide,
+  drawSubsidy,
+  drawWarrantyCards,
+} from "./quotationInfographics";
 
 /** What the offer page prints about the system — the surveyed final configuration, or (no survey) the lead's recommended system. */
 export interface QuotationPdfSystem {
@@ -39,153 +49,6 @@ export interface QuotationPdfContext {
   survey?: SurveyDocument | null;
 }
 
-const ASSETS = path.join(process.cwd(), "src", "assets");
-const FONT = {
-  regular: path.join(ASSETS, "fonts", "Poppins-Regular.ttf"),
-  medium: path.join(ASSETS, "fonts", "Poppins-Medium.ttf"),
-  semi: path.join(ASSETS, "fonts", "Poppins-SemiBold.ttf"),
-  bold: path.join(ASSETS, "fonts", "Poppins-Bold.ttf"),
-};
-const LOGO = path.join(ASSETS, "logo.png");
-const COVER_IMAGE = path.join(ASSETS, "img", "hero.jpg");
-
-const DEEP = "#0B2F6B";
-const SKY = "#2A6BC9";
-const LIGHT_SKY = "#E8F0FB";
-const ORANGE = "#FD8002";
-const TEXT = "#1F2937";
-const MUTED = "#6B7280";
-const BORDER = "#DDE3EC";
-const PAGE_BG = "#F4F7FB";
-const GREEN = "#15803D";
-
-const W = 595.28;
-const H = 841.89;
-const M = 44;
-const CW = W - M * 2;
-const FOOTER_H = 46;
-
-const rupee = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
-const inr = (n: number) => `₹ ${rupee.format(Math.round(n))}`;
-
-type Doc = PDFKit.PDFDocument;
-const f = {
-  reg: (d: Doc) => d.font("R"),
-  med: (d: Doc) => d.font("M"),
-  semi: (d: Doc) => d.font("S"),
-  bold: (d: Doc) => d.font("B"),
-};
-
-/**
- * Shrinks (then ellipsises) a single-line string so it always fits `width`, using the doc's current
- * font. Customer names are free text — a long one must never run into the elements beside it.
- */
-function fitLine(doc: Doc, text: string, width: number, maxSize: number, minSize: number): { text: string; size: number } {
-  let size = maxSize;
-  doc.fontSize(size);
-  while (size > minSize && doc.widthOfString(text) > width) {
-    size -= 0.5;
-    doc.fontSize(size);
-  }
-  if (doc.widthOfString(text) <= width) return { text, size };
-  let clipped = text;
-  while (clipped.length > 1 && doc.widthOfString(`${clipped}…`) > width) clipped = clipped.slice(0, -1);
-  return { text: `${clipped.trimEnd()}…`, size };
-}
-
-function pageBackground(doc: Doc, color = PAGE_BG) {
-  doc.rect(0, 0, W, H).fill(color);
-}
-
-function pageTitle(doc: Doc, plain: string, accent: string, subtitle?: string): number {
-  const y = 34;
-  // logo chip, top-right
-  if (fs.existsSync(LOGO)) doc.image(LOGO, W - M - 34, y - 6, { width: 34 });
-  f.bold(doc).fontSize(21).fillColor(TEXT);
-  const plainW = doc.widthOfString(`${plain} `);
-  doc.text(`${plain} `, M, y, { continued: false, lineBreak: false });
-  f.bold(doc).fillColor(SKY).fontSize(21).text(accent, M + plainW, y, { lineBreak: false });
-  let next = y + 32;
-  if (subtitle) {
-    f.reg(doc).fontSize(9.5).fillColor(MUTED).text(subtitle, M, next - 4, { width: CW - 50 });
-    next += 18;
-  }
-  return next + 6;
-}
-
-function card(doc: Doc, x: number, y: number, w: number, h: number, fill = "#FFFFFF") {
-  doc.roundedRect(x, y, w, h, 10).fillAndStroke(fill, BORDER);
-}
-
-function bottom() {
-  return H - FOOTER_H - 14;
-}
-
-function newPage(doc: Doc, plain: string, accent: string, subtitle?: string): number {
-  doc.addPage();
-  pageBackground(doc);
-  return pageTitle(doc, plain, accent, subtitle);
-}
-
-function ensure(doc: Doc, y: number, need: number, plain: string, accent: string): number {
-  if (y + need <= bottom()) return y;
-  return newPage(doc, plain, accent);
-}
-
-/** Two-column-or-more table with a sky header row. Returns the y after the table. */
-function table(
-  doc: Doc,
-  y: number,
-  cols: Array<{ label: string; w: number; align?: "left" | "right" | "center" }>,
-  rows: string[][],
-  opts: { boldLast?: boolean; highlightRow?: number; ctx: [string, string] },
-): number {
-  const rowPad = 8;
-  const drawHeader = (yy: number) => {
-    doc.roundedRect(M, yy, CW, 26, 6).fill(SKY);
-    let x = M;
-    f.semi(doc).fontSize(8.5).fillColor("#FFFFFF");
-    cols.forEach((c) => {
-      doc.text(c.label, x + 10, yy + 8, { width: c.w - 20, align: c.align ?? "left", lineBreak: false });
-      x += c.w;
-    });
-    return yy + 26;
-  };
-  y = drawHeader(y);
-  rows.forEach((row, i) => {
-    f.reg(doc).fontSize(9);
-    const heights = row.map((cell, ci) => doc.heightOfString(cell, { width: cols[ci]!.w - 20 }));
-    const rh = Math.max(24, Math.max(...heights) + rowPad * 2 - 2);
-    if (y + rh > bottom()) {
-      y = newPage(doc, opts.ctx[0], opts.ctx[1]);
-      y = drawHeader(y);
-    }
-    const last = opts.boldLast && i === rows.length - 1;
-    const hi = opts.highlightRow === i;
-    doc.rect(M, y, CW, rh).fill(hi ? LIGHT_SKY : last ? LIGHT_SKY : i % 2 ? "#FFFFFF" : "#FBFCFE");
-    let x = M;
-    row.forEach((cell, ci) => {
-      (last || hi ? f.semi(doc) : f.reg(doc)).fontSize(9).fillColor(last ? DEEP : TEXT);
-      doc.text(cell, x + 10, y + rowPad - 1, { width: cols[ci]!.w - 20, align: cols[ci]!.align ?? "left" });
-      x += cols[ci]!.w;
-    });
-    doc.moveTo(M, y + rh).lineTo(M + CW, y + rh).lineWidth(0.6).strokeColor(BORDER).stroke();
-    y += rh;
-  });
-  return y;
-}
-
-function numberedList(doc: Doc, y: number, items: ReadonlyArray<string>, x = M, w = CW, ctx: [string, string]): number {
-  items.forEach((item, i) => {
-    f.reg(doc).fontSize(8.5).fillColor(MUTED);
-    const h = doc.heightOfString(item, { width: w - 20 });
-    if (y + h > bottom()) y = newPage(doc, ctx[0], ctx[1]);
-    doc.text(`${i + 1}.`, x, y, { width: 16, lineBreak: false });
-    doc.text(item, x + 16, y, { width: w - 16 });
-    y += h + 5;
-  });
-  return y;
-}
 
 // ───────────────────────────── PAGE 1 — COVER ─────────────────────────────
 function drawCover(doc: Doc, q: PublicQuotation, lead: LeadDocument, kw: number) {
@@ -287,15 +150,15 @@ function drawOffer(doc: Doc, q: PublicQuotation, lead: LeadDocument, ctx: Quotat
     ["Roof", roof ? `${roof.roofType.length <= 3 ? roof.roofType : roof.roofType[0] + roof.roofType.slice(1).toLowerCase()} roof · ${rupee.format(roof.roofAreaSqft)} sq.ft` : "Verified at site survey"],
     ["Offering", "Turnkey EPC + AMC support"],
   ];
+  const specIcons: IconName[] = ["house", "panel", "inverter", "sun", "structure", "installer", "survey", "shield"];
   const gw = (CW - 14) / 2;
   specs.forEach(([label, value], i) => {
     const x = M + (i % 2) * (gw + 14);
     const yy = y + Math.floor(i / 2) * 50;
     card(doc, x, yy, gw, 42, "#FFFFFF");
-    doc.circle(x + 22, yy + 21, 12).fill(LIGHT_SKY);
-    f.bold(doc).fontSize(9).fillColor(SKY).text(String(i + 1), x + 17, yy + 15, { width: 10, align: "center", lineBreak: false });
-    f.reg(doc).fontSize(7.8).fillColor(MUTED).text(label, x + 42, yy + 7, { width: gw - 50, lineBreak: false });
-    f.semi(doc).fontSize(9).fillColor(TEXT).text(value, x + 42, yy + 19, { width: gw - 50, height: 20, ellipsis: true });
+    drawIllustration(doc, specIcons[i]!, x + 24, yy + 21, 32, { backdrop: LIGHT_SKY });
+    f.reg(doc).fontSize(7.8).fillColor(MUTED).text(label, x + 48, yy + 7, { width: gw - 56, lineBreak: false });
+    f.semi(doc).fontSize(9).fillColor(TEXT).text(value, x + 48, yy + 19, { width: gw - 56, height: 20, ellipsis: true });
   });
   y += Math.ceil(specs.length / 2) * 50 + 8;
 
@@ -413,18 +276,28 @@ function drawSurveyPhotos(doc: Doc, q: PublicQuotation, survey: SurveyDocument |
 }
 
 // ───────────────────────────── PAGE 3 — BILL OF MATERIALS ─────────────────────────────
+const CATEGORY_ICON: Record<string, IconName> = {
+  PANEL: "panel",
+  INVERTER: "inverter",
+  STRUCTURE: "structure",
+  BATTERY: "battery",
+  ACCESSORY: "cable",
+  OTHER: "service",
+};
+
 function drawBom(doc: Doc, q: PublicQuotation) {
   let y = newPage(doc, "Bill of", "materials", "What is included in your rooftop system price.");
   const cols = [
-    { label: "#", w: 34 },
-    { label: "Description", w: CW - 34 - 50 - 95 - 100 },
+    { label: "Item", w: 48 },
+    { label: "Description", w: CW - 48 - 50 - 95 - 100 },
     { label: "Qty", w: 50, align: "right" as const },
     { label: "Unit price", w: 95, align: "right" as const },
     { label: "Amount", w: 100, align: "right" as const },
   ];
-  const rows = q.items.map((it, i) => [String(i + 1), it.description, String(it.quantity), inr(it.unitPrice), inr(it.amount)]);
+  const rows = q.items.map((it) => ["", it.description, String(it.quantity), inr(it.unitPrice), inr(it.amount)]);
   rows.push(["", "Subtotal", "", "", inr(q.subtotal)]);
-  y = table(doc, y, cols, rows, { boldLast: true, ctx: ["Bill of", "materials"] });
+  const icons = q.items.map((it) => CATEGORY_ICON[it.category] ?? "cable");
+  y = table(doc, y, cols, rows, { boldLast: true, ctx: ["Bill of", "materials"], icons });
 
   y += 22;
   y = ensure(doc, y, 150, "Bill of", "materials");
@@ -436,12 +309,13 @@ function drawBom(doc: Doc, q: PublicQuotation) {
     const yy = y + Math.floor(i / 2) * 84;
     card(doc, x, yy, gw, 74);
     doc.roundedRect(x, yy, 5, 74, 2).fill(i % 2 ? ORANGE : SKY);
-    f.semi(doc).fontSize(9.5).fillColor(DEEP).text(item.title, x + 16, yy + 10, { width: gw - 26 });
-    f.reg(doc).fontSize(8.3).fillColor(MUTED).text(item.body, x + 16, yy + 26, { width: gw - 26 });
+    drawIllustration(doc, item.icon, x + 38, yy + 37, 44, { backdrop: LIGHT_SKY });
+    f.semi(doc).fontSize(9.5).fillColor(DEEP).text(item.title, x + 70, yy + 10, { width: gw - 80 });
+    f.reg(doc).fontSize(8.3).fillColor(MUTED).text(item.body, x + 70, yy + 26, { width: gw - 80 });
   });
 }
 
-// ───────────────────────────── PAGE 4 — SAVINGS & SIZING GUIDE ─────────────────────────────
+// ───────────────────────────── SAVINGS ─────────────────────────────
 function drawSavings(doc: Doc, q: PublicQuotation, lead: LeadDocument, kw: number) {
   let y = newPage(doc, "Your", "savings", "Illustrative estimate — actual generation depends on location, shading and grid availability.");
 
@@ -451,21 +325,22 @@ function drawSavings(doc: Doc, q: PublicQuotation, lead: LeadDocument, kw: numbe
   const payback = q.totalAmount > 0 && yearlySaving > 0 ? q.totalAmount / yearlySaving : 0;
   const co2Tonnes = (unitsPerMonth * 12 * 0.82) / 1000;
 
-  const kpis: Array<[string, string, string]> = [
-    ["Estimated generation", `${rupee.format(unitsPerMonth)} units`, "per month"],
-    ["Estimated bill saving", inr(monthlySaving), "per month"],
-    ["Yearly saving", inr(yearlySaving), "per year"],
-    ["Payback period", payback ? `${payback.toFixed(1)} yrs` : "—", "on net effective price"],
+  const kpis: Array<[string, string, string, IconName]> = [
+    ["Estimated generation", `${rupee.format(unitsPerMonth)} units`, "per month", "sun"],
+    ["Estimated bill saving", inr(monthlySaving), "per month", "bill"],
+    ["Yearly saving", inr(yearlySaving), "per year", "money"],
+    ["Payback period", payback ? `${payback.toFixed(1)} yrs` : "—", "on net effective price", "calendar"],
   ];
   const kw4 = (CW - 3 * 10) / 4;
-  kpis.forEach(([label, value, sub], i) => {
+  kpis.forEach(([label, value, sub, icon], i) => {
     const x = M + i * (kw4 + 10);
-    card(doc, x, y, kw4, 82, i === 1 ? SKY : "#FFFFFF");
-    f.reg(doc).fontSize(7.8).fillColor(i === 1 ? "#DCE8FA" : MUTED).text(label, x + 12, y + 12, { width: kw4 - 20 });
-    f.bold(doc).fontSize(14).fillColor(i === 1 ? "#FFFFFF" : DEEP).text(value, x + 12, y + 32, { width: kw4 - 16 });
-    f.reg(doc).fontSize(7.8).fillColor(i === 1 ? "#DCE8FA" : MUTED).text(sub, x + 12, y + 58, { width: kw4 - 20 });
+    card(doc, x, y, kw4, 88, i === 1 ? SKY : "#FFFFFF");
+    drawIllustration(doc, icon, x + kw4 - 25, y + 26, 34, { backdrop: i === 1 ? "#FFFFFF" : LIGHT_SKY });
+    f.reg(doc).fontSize(7.8).fillColor(i === 1 ? "#DCE8FA" : MUTED).text(label, x + 12, y + 12, { width: kw4 - 52 });
+    f.bold(doc).fontSize(14).fillColor(i === 1 ? "#FFFFFF" : DEEP).text(value, x + 12, y + 46, { width: kw4 - 16 });
+    f.reg(doc).fontSize(7.8).fillColor(i === 1 ? "#DCE8FA" : MUTED).text(sub, x + 12, y + 68, { width: kw4 - 20 });
   });
-  y += 100;
+  y += 104;
 
   // before/after bars
   const bill = lead.monthlyBill || monthlySaving;
@@ -481,49 +356,25 @@ function drawSavings(doc: Doc, q: PublicQuotation, lead: LeadDocument, kw: numbe
     doc.roundedRect(M + 110, by, bw, 16, 8).fill(col);
     f.semi(doc).fontSize(9).fillColor(TEXT).text(inr(val), M + 110 + barMax + 10, by + 3, { width: 70, lineBreak: false });
   });
-  y += 112;
+  y += 108;
 
   f.reg(doc).fontSize(8.3).fillColor(MUTED).text(
-    `Based on ${UNITS_PER_KW_PER_DAY} units per kW per day and an average tariff of ₹ ${AVERAGE_TARIFF_PER_UNIT}/unit. Avoids about ${co2Tonnes.toFixed(1)} tonnes of CO2 every year.`,
+    `Based on ${UNITS_PER_KW_PER_DAY} units per kW per day and an average tariff of ₹ ${AVERAGE_TARIFF_PER_UNIT}/unit.`,
     M, y, { width: CW },
   );
-  y += 30;
+  y += 26;
 
-  // sizing guide
-  f.bold(doc).fontSize(12).fillColor(TEXT).text("Which system suits which home?", M, y);
-  y += 20;
-  const nearest = SYSTEM_GUIDE.reduce((best, row, i) => (Math.abs(row.kw - kw) < Math.abs(SYSTEM_GUIDE[best]!.kw - kw) ? i : best), 0);
-  y = table(
-    doc,
-    y,
-    [
-      { label: "Size", w: 50 },
-      { label: "Per day", w: 60, align: "right" },
-      { label: "Per month", w: 70, align: "right" },
-      { label: "What it can run", w: CW - 50 - 60 - 70 - 118 },
-      { label: "Best for", w: 118 },
-    ],
-    SYSTEM_GUIDE.map((r) => [`${r.kw} kW`, String(r.unitsPerDay), String(r.unitsPerMonth), r.runs, r.bestFor]),
-    { highlightRow: nearest, ctx: ["Your", "savings"] },
+  // cleaner air callout
+  card(doc, M, y, CW, 62, "#EAF7EF");
+  drawIllustration(doc, "co2", M + 38, y + 31, 50);
+  f.semi(doc).fontSize(10).fillColor(GREEN).text("Cleaner air, too", M + 76, y + 13);
+  f.reg(doc).fontSize(8.5).fillColor(TEXT).text(
+    `Your system avoids about ${co2Tonnes.toFixed(1)} tonnes of CO2 every year by replacing grid electricity with sunshine.`,
+    M + 76, y + 29, { width: CW - 96 },
   );
+  y += 78;
 
-  // price list
-  y += 20;
-  y = ensure(doc, y, 60 + SYSTEM_PRICE_LIST.length * 6, "Your", "savings");
-  f.bold(doc).fontSize(12).fillColor(TEXT).text("Standard rooftop system price guide", M, y);
-  y += 18;
-  const chipCount = SYSTEM_PRICE_LIST.length;
-  const gap = 5;
-  const chipW = (CW - (chipCount - 1) * gap) / chipCount;
-  SYSTEM_PRICE_LIST.forEach((row, i) => {
-    const x = M + i * (chipW + gap);
-    const active = row.kw === Math.round(kw);
-    doc.roundedRect(x, y, chipW, 54, 7).fillAndStroke(active ? DEEP : "#FFFFFF", active ? DEEP : BORDER);
-    f.bold(doc).fontSize(10).fillColor(active ? "#FFFFFF" : SKY).text(`${row.kw} kW`, x, y + 9, { width: chipW, align: "center" });
-    f.semi(doc).fontSize(7).fillColor(active ? "#FFFFFF" : TEXT).text(inr(row.price), x, y + 30, { width: chipW, align: "center" });
-  });
-  y += 62;
-  f.reg(doc).fontSize(7.8).fillColor(MUTED).text("Indicative prices inclusive of GST, before subsidy. Final price is confirmed after the site survey.", M, y, { width: CW });
+  drawLongTermSavings(doc, y, q.totalAmount, yearlySaving);
 }
 
 // ───────────────────────────── PAGE 5 — FINANCING ─────────────────────────────
@@ -562,17 +413,7 @@ function drawFinancing(doc: Doc, q: PublicQuotation) {
 
   f.bold(doc).fontSize(12).fillColor(TEXT).text("Payment terms", M, y);
   y += 20;
-  y = table(
-    doc,
-    y,
-    [
-      { label: "Project milestone", w: 165 },
-      { label: "If you choose EMI", w: 165 },
-      { label: "If you pay directly", w: CW - 330 },
-    ],
-    PAYMENT_TERMS.milestones.map((m) => [m.milestone, m.emi, m.direct]),
-    { ctx: ["Flexible", "financing"] },
-  );
+  y = drawMilestones(doc, y);
   y += 22;
   y = ensure(doc, y, 90, "Flexible", "financing");
   f.bold(doc).fontSize(9).fillColor(TEXT).text("Financing terms", M, y);
@@ -594,9 +435,7 @@ function drawFinancing(doc: Doc, q: PublicQuotation) {
 // ───────────────────────────── PAGE 6 — WARRANTY ─────────────────────────────
 function drawWarranty(doc: Doc) {
   let y = newPage(doc, "Warranty and", "services", "Peace of mind that continues long after commissioning.");
-  y = table(doc, y, [{ label: "Component", w: CW - 170 }, { label: "Coverage", w: 170 }], WARRANTY_TABLE.map((r) => [r.component, r.years]), {
-    ctx: ["Warranty and", "services"],
-  });
+  y = drawWarrantyCards(doc, y);
   y += 24;
   y = ensure(doc, y, 220, "Warranty and", "services");
 
@@ -620,34 +459,14 @@ function drawWarranty(doc: Doc) {
   const h2 = colBox(M + gw + 14, "What is not covered", NOT_COVERED, ORANGE);
   y += Math.max(h1, h2) + 18;
 
-  y = ensure(doc, y, 60, "Warranty and", "services");
-  card(doc, M, y, CW, 54, LIGHT_SKY);
-  f.semi(doc).fontSize(9.5).fillColor(DEEP).text("Service promise", M + 16, y + 11);
+  y = ensure(doc, y, 70, "Warranty and", "services");
+  card(doc, M, y, CW, 64, LIGHT_SKY);
+  drawIllustration(doc, "support", M + 38, y + 32, 50);
+  f.semi(doc).fontSize(9.5).fillColor(DEEP).text("Service promise", M + 74, y + 12);
   f.reg(doc).fontSize(8.5).fillColor(TEXT).text(
     "Periodic panel-cleaning and performance-check visits, and a dedicated support team by call, WhatsApp and email throughout the warranty period.",
-    M + 16, y + 26, { width: CW - 32 },
+    M + 74, y + 27, { width: CW - 92 },
   );
-}
-
-// ───────────────────────────── PAGE 7 — JOURNEY ─────────────────────────────
-function drawJourney(doc: Doc) {
-  let y = newPage(doc, "Your solar", "journey with us", "From booking to switch-on — here is how we take care of everything.");
-  y += 6;
-  const rowH = 66;
-  const cx = W / 2;
-  // spine
-  doc.moveTo(cx, y + 12).lineTo(cx, y + rowH * (JOURNEY_STEPS.length - 1) + 12).lineWidth(2).dash(4, { space: 4 }).strokeColor(SKY).stroke().undash();
-  JOURNEY_STEPS.forEach((step, i) => {
-    const yy = y + i * rowH;
-    const left = i % 2 === 0;
-    doc.circle(cx, yy + 12, 13).fill(i === JOURNEY_STEPS.length - 1 ? GREEN : SKY);
-    f.bold(doc).fontSize(10).fillColor("#FFFFFF").text(String(i + 1), cx - 13, yy + 6.5, { width: 26, align: "center", lineBreak: false });
-    const bw = cx - M - 28;
-    const bx = left ? M : cx + 28;
-    card(doc, bx, yy - 6, bw, 52);
-    f.semi(doc).fontSize(9.3).fillColor(DEEP).text(step.title, bx + 12, yy + 1, { width: bw - 24, align: left ? "right" : "left" });
-    f.reg(doc).fontSize(7.9).fillColor(MUTED).text(step.body, bx + 12, yy + 15, { width: bw - 24, align: left ? "right" : "left" });
-  });
 }
 
 // ───────────────────────────── PAGE 8 — TERMS & ACCEPTANCE ─────────────────────────────
@@ -672,6 +491,7 @@ function drawTermsAndAcceptance(doc: Doc, q: PublicQuotation, lead: LeadDocument
 
   y = ensure(doc, y, 90, "Terms and", "acceptance");
   doc.roundedRect(M, y, CW, 84, 14).fill(DEEP);
+  drawIllustration(doc, "support", M + CW - 52, y + 42, 62, { backdrop: "#1B4488" });
   f.bold(doc).fontSize(13).fillColor("#FFFFFF").text("Questions? We're one message away.", M + 20, y + 14);
   f.reg(doc).fontSize(9.5).fillColor("#D7E4F8")
     .text(`${COMPANY.phones.join("  ·  ")}`, M + 20, y + 36)
@@ -701,9 +521,12 @@ export function renderQuotationPdf(quotation: PublicQuotation, lead: LeadDocumen
 
   drawCover(doc, quotation, lead, kw);
   drawOffer(doc, quotation, lead, ctx, kw);
+  drawHowItWorks(doc, kw);
   drawSurveyPhotos(doc, quotation, ctx.survey);
   drawBom(doc, quotation);
   drawSavings(doc, quotation, lead, kw);
+  drawSizingGuide(doc, kw);
+  if (quotation.subsidyAmount > 0) drawSubsidy(doc, quotation);
   drawFinancing(doc, quotation);
   drawWarranty(doc);
   drawJourney(doc);

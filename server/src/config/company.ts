@@ -4,6 +4,8 @@
  * are sensible defaults that the business should confirm before quotations go out.
  */
 
+import type { IconName } from "../util/pdfIllustrations";
+
 export const COMPANY = {
   name: "GK India SolarTech",
   tagline: "Solar EPC & Consultancy",
@@ -55,52 +57,85 @@ export function systemPriceFor(kw: number): number {
 /** How a fallback system price is split across quotation lines. */
 export const PRICE_SPLIT = { panels: 0.45, inverter: 0.15, structure: 0.15, balanceOfSystem: 0.25 } as const;
 
+export interface Appliance {
+  icon: IconName;
+  label: string;
+}
+
 export interface SystemGuideRow {
   kw: number;
   unitsPerDay: number;
   unitsPerMonth: number;
-  runs: string;
-  bestFor: string;
+  /** What the system can comfortably run — drawn as an icon strip on the sizing page. Max 8. */
+  appliances: ReadonlyArray<Appliance>;
+  monthlyBill: string;
 }
 
 export const SYSTEM_GUIDE: ReadonlyArray<SystemGuideRow> = [
-  { kw: 1, unitsPerDay: 5, unitsPerMonth: 150, runs: "2-3 LED lights, 1-2 fans, TV, mobile/laptop charging", bestFor: "Monthly bill of Rs. 800 - 1,500" },
-  { kw: 2, unitsPerDay: 10, unitsPerMonth: 300, runs: "3-4 LED lights, 2-3 fans, TV, fridge, air cooler", bestFor: "Monthly bill of Rs. 1,500 - 2,500" },
-  { kw: 3, unitsPerDay: 15, unitsPerMonth: 450, runs: "1 inverter AC, 2-3 fans, TV, fridge, lights, water pump, washing machine, cooler", bestFor: "Monthly bill of Rs. 2,000 - 3,000" },
-  { kw: 5, unitsPerDay: 25, unitsPerMonth: 750, runs: "1-2 inverter ACs, 3-4 fans, TV, fridge, lights, water pump, cooler, washing machine, geyser", bestFor: "Monthly bill of Rs. 4,000 - 6,000" },
-  { kw: 6, unitsPerDay: 30, unitsPerMonth: 900, runs: "2 ACs, 4-5 fans, TV, fridge, lights, water pump, cooler, washing machine, motor", bestFor: "Monthly bill of Rs. 6,000 - 8,000" },
-  { kw: 8, unitsPerDay: 40, unitsPerMonth: 1200, runs: "2-3 ACs, 5-6 fans, TV, fridge, lights, pump, cooler, washing machine, geyser, motor, inverter/battery", bestFor: "Monthly bill of Rs. 8,000 - 12,000" },
-  { kw: 10, unitsPerDay: 50, unitsPerMonth: 1500, runs: "3-4 ACs, 6-8 fans, TV, fridge, lights, pump, cooler, washing machine, geyser, motor, inverter/EV charging", bestFor: "Monthly bill of Rs. 12,000+" },
+  {
+    kw: 1, unitsPerDay: 5, unitsPerMonth: 150, monthlyBill: "Rs. 800 - 1,500",
+    appliances: [{ icon: "bulb", label: "Lights" }, { icon: "fan", label: "1-2 fans" }, { icon: "tv", label: "TV" }],
+  },
+  {
+    kw: 2, unitsPerDay: 10, unitsPerMonth: 300, monthlyBill: "Rs. 1,500 - 2,500",
+    appliances: [{ icon: "bulb", label: "Lights" }, { icon: "fan", label: "2-3 fans" }, { icon: "tv", label: "TV" }, { icon: "fridge", label: "Fridge" }, { icon: "cooler", label: "Cooler" }],
+  },
+  {
+    kw: 3, unitsPerDay: 15, unitsPerMonth: 450, monthlyBill: "Rs. 2,000 - 3,000",
+    appliances: [{ icon: "ac", label: "1 AC" }, { icon: "fan", label: "2-3 fans" }, { icon: "tv", label: "TV" }, { icon: "fridge", label: "Fridge" }, { icon: "pump", label: "Pump" }, { icon: "washer", label: "Washer" }, { icon: "cooler", label: "Cooler" }],
+  },
+  {
+    kw: 5, unitsPerDay: 25, unitsPerMonth: 750, monthlyBill: "Rs. 4,000 - 6,000",
+    appliances: [{ icon: "ac", label: "1-2 ACs" }, { icon: "fan", label: "3-4 fans" }, { icon: "tv", label: "TV" }, { icon: "fridge", label: "Fridge" }, { icon: "pump", label: "Pump" }, { icon: "washer", label: "Washer" }, { icon: "geyser", label: "Geyser" }, { icon: "cooler", label: "Cooler" }],
+  },
+  {
+    kw: 6, unitsPerDay: 30, unitsPerMonth: 900, monthlyBill: "Rs. 6,000 - 8,000",
+    appliances: [{ icon: "ac", label: "2 ACs" }, { icon: "fan", label: "4-5 fans" }, { icon: "tv", label: "TV" }, { icon: "fridge", label: "Fridge" }, { icon: "pump", label: "Pump" }, { icon: "washer", label: "Washer" }, { icon: "cooler", label: "Cooler" }],
+  },
+  {
+    kw: 8, unitsPerDay: 40, unitsPerMonth: 1200, monthlyBill: "Rs. 8,000 - 12,000",
+    appliances: [{ icon: "ac", label: "2-3 ACs" }, { icon: "fan", label: "5-6 fans" }, { icon: "tv", label: "TV" }, { icon: "fridge", label: "Fridge" }, { icon: "pump", label: "Pump" }, { icon: "washer", label: "Washer" }, { icon: "geyser", label: "Geyser" }, { icon: "cooler", label: "Cooler" }],
+  },
+  {
+    kw: 10, unitsPerDay: 50, unitsPerMonth: 1500, monthlyBill: "Rs. 12,000+",
+    appliances: [{ icon: "ac", label: "3-4 ACs" }, { icon: "fan", label: "6-8 fans" }, { icon: "tv", label: "TV" }, { icon: "fridge", label: "Fridge" }, { icon: "pump", label: "Pump" }, { icon: "washer", label: "Washer" }, { icon: "geyser", label: "Geyser" }, { icon: "ev", label: "EV charging" }],
+  },
 ];
 
 /** Milestone payments. `direct` is % of the net price; booking is a flat amount. REVIEW. */
-export const PAYMENT_TERMS = {
+export const PAYMENT_TERMS: {
+  bookingAmount: number;
+  milestones: ReadonlyArray<{ milestone: string; emi: string; direct: string; icon: IconName }>;
+  downPaymentPercent: number;
+  processingFee: number;
+  emiTenuresMonths: ReadonlyArray<number>;
+} = {
   bookingAmount: 10000,
   milestones: [
-    { milestone: "Booking", emi: "Booking amount", direct: "Rs. 10,000 (adjusted in final bill)" },
-    { milestone: "Design approval", emi: "Processing fee + down payment", direct: "30% of net price" },
-    { milestone: "Before material dispatch", emi: "E-NACH / loan disbursal", direct: "60% of net price" },
-    { milestone: "After commissioning", emi: "First EMI after 30 days", direct: "Balance 10% of net price" },
+    { milestone: "Booking", emi: "Booking amount", direct: "Rs. 10,000 (adjusted in final bill)", icon: "money" },
+    { milestone: "Design approval", emi: "Processing fee + down payment", direct: "30% of net price", icon: "design" },
+    { milestone: "Before material dispatch", emi: "E-NACH / loan disbursal", direct: "60% of net price", icon: "van" },
+    { milestone: "After commissioning", emi: "First EMI after 30 days", direct: "Balance 10% of net price", icon: "ecohome" },
   ],
   downPaymentPercent: 30,
   processingFee: 2160,
   emiTenuresMonths: [12, 24, 36, 60],
-} as const;
+};
 
-export const WARRANTY_TABLE: ReadonlyArray<{ component: string; years: string }> = [
-  { component: "Solar panel - product warranty", years: "12 years" },
-  { component: "Solar panel - performance warranty", years: "25 years" },
-  { component: "Inverter", years: "5 years (extendable)" },
-  { component: "Mounting structure - design life", years: "25 years" },
-  { component: "Mounting structure - warranty", years: "10 years" },
-  { component: "Cables, protection & other components", years: "1 year" },
+export const WARRANTY_TABLE: ReadonlyArray<{ component: string; years: string; note?: string; icon: IconName }> = [
+  { component: "Solar panel - product warranty", years: "12 years", icon: "panel" },
+  { component: "Solar panel - performance warranty", years: "25 years", icon: "sun" },
+  { component: "Inverter", years: "5 years", note: "Extendable", icon: "inverter" },
+  { component: "Mounting structure - design life", years: "25 years", icon: "structure" },
+  { component: "Mounting structure - warranty", years: "10 years", icon: "shield" },
+  { component: "Cables, protection & other components", years: "1 year", icon: "cable" },
 ];
 
-export const WHAT_YOU_GET: ReadonlyArray<{ title: string; body: string }> = [
-  { title: "End-to-end EPC", body: "Site survey, design, procurement, installation and commissioning by one accountable team." },
-  { title: "Subsidy & net metering support", body: "We prepare and follow up the government subsidy and net-metering applications on your behalf." },
-  { title: "Durable mounting structures", body: "Hot-dip galvanised structures engineered for your roof type and local wind conditions." },
-  { title: "AMC & service support", body: "Annual maintenance, cleaning visits and a dedicated support line after commissioning." },
+export const WHAT_YOU_GET: ReadonlyArray<{ title: string; body: string; icon: IconName }> = [
+  { title: "End-to-end EPC", body: "Site survey, design, procurement, installation and commissioning by one accountable team.", icon: "clipboard" },
+  { title: "Subsidy & net metering support", body: "We prepare and follow up the government subsidy and net-metering applications on your behalf.", icon: "form" },
+  { title: "Durable mounting structures", body: "Hot-dip galvanised structures engineered for your roof type and local wind conditions.", icon: "structure" },
+  { title: "AMC & service support", body: "Annual maintenance, cleaning visits and a dedicated support line after commissioning.", icon: "service" },
 ];
 
 export const CUSTOMER_RESPONSIBILITIES: ReadonlyArray<string> = [
@@ -118,17 +153,62 @@ export const NOT_COVERED: ReadonlyArray<string> = [
   "Discom charges for load, name or phase changes on the electricity connection",
 ];
 
-export const JOURNEY_STEPS: ReadonlyArray<{ title: string; body: string }> = [
-  { title: "Book with advance", body: "Pay the booking amount; we process your details within 3-4 days." },
-  { title: "Meet your project manager", body: "A dedicated GK India SolarTech manager is your single point of contact." },
-  { title: "Detailed site survey", body: "Engineers verify roof, shadow and electrical load for the final design." },
-  { title: "Approve your design", body: "Review and approve the system design and layout." },
-  { title: "We handle paperwork", body: "Discom application, net metering and subsidy documentation." },
-  { title: "Delivery & installation", body: "Materials arrive and our trained team installs your system." },
-  { title: "Clean-up & handover", body: "We clean the site and walk you through the system." },
-  { title: "Net metering & commissioning", body: "Discom inspection, meter change and switch-on." },
-  { title: "Enjoy lower bills", body: "Track generation, and rely on AMC and support whenever you need us." },
+export const JOURNEY_STEPS: ReadonlyArray<{ title: string; body: string; icon: IconName }> = [
+  { title: "Book with advance", body: "Pay the booking amount and we process your details within 3-4 days.", icon: "money" },
+  { title: "Meet your project manager", body: "A dedicated manager is your single point of contact, start to finish.", icon: "manager" },
+  { title: "Detailed site survey", body: "Our engineers check your roof, shadow and electrical load.", icon: "survey" },
+  { title: "Approve your design", body: "Review and approve the final system design and layout.", icon: "design" },
+  { title: "We handle the paperwork", body: "Discom application, net metering and subsidy documents - done for you.", icon: "form" },
+  { title: "Confirm your timeline", body: "You confirm the design and get a tentative delivery and installation timeline.", icon: "calendar" },
+  { title: "Pay the next milestone", body: "Clear the next payment directly, or opt for easy EMI disbursal.", icon: "emi" },
+  { title: "Materials get ready", body: "We confirm availability of every item and our team starts preparing.", icon: "boxes" },
+  { title: "Safe delivery", body: "Your system arrives in our delivery vehicles, packed to travel safely.", icon: "van" },
+  { title: "Installation day", body: "Trained installers turn your roof into your own power plant.", icon: "installer" },
+  { title: "Clean-up and handover", body: "We clean your roof and premises, then walk you through the system.", icon: "cleaning" },
+  { title: "Support, always", body: "A dedicated team is on call, WhatsApp and email whenever you need us.", icon: "support" },
+  { title: "Net metering and switch-on", body: "We coordinate the discom inspection, meter change and commissioning.", icon: "tower" },
+  { title: "Enjoy lower bills", body: "Reduced bills, green energy and long-term service support.", icon: "ecohome" },
 ];
+
+/** "How your solar system works" flow: sunlight to savings. */
+export const HOW_IT_WORKS_FLOW: ReadonlyArray<{ title: string; body: string; icon: IconName }> = [
+  { title: "Sunlight", body: "Free sunshine falls on your roof every day.", icon: "sun" },
+  { title: "Solar panels", body: "Panels turn sunlight into DC electricity.", icon: "panel" },
+  { title: "Inverter", body: "Converts DC into home-ready AC power.", icon: "inverter" },
+  { title: "Your home", body: "Your appliances run on solar power first.", icon: "house" },
+  { title: "Net meter", body: "Counts the units you export and import.", icon: "meter" },
+  { title: "Power grid", body: "Surplus goes to the grid; you draw from it at night.", icon: "tower" },
+];
+
+export const HOW_IT_WORKS_DAY_CYCLE: ReadonlyArray<{ title: string; body: string; icon: IconName }> = [
+  { title: "In the daytime", body: "Solar power runs your home first. Any surplus flows to the grid and is credited to you.", icon: "sun" },
+  { title: "At night or on cloudy days", body: "Your home draws from the grid as usual - your exported credits are set off against it.", icon: "moon" },
+  { title: "On your electricity bill", body: "You pay only for the net units - what you imported minus what you exported.", icon: "bill" },
+];
+
+export const SYSTEM_PARTS: ReadonlyArray<{ title: string; body: string; icon: IconName }> = [
+  { title: "Solar panels", body: "Generate DC power from sunlight - the heart of your system.", icon: "panel" },
+  { title: "Inverter", body: "Converts DC to AC, syncs with the grid and reports your generation.", icon: "inverter" },
+  { title: "Mounting structure", body: "Hot-dip galvanised frame engineered for your roof and wind load.", icon: "structure" },
+  { title: "Cables and protection", body: "DC/AC cables, breakers, surge protection and earthing keep it safe.", icon: "cable" },
+  { title: "Net meter", body: "A bi-directional discom meter records power exported and imported.", icon: "meter" },
+  { title: "Wi-Fi monitoring", body: "Track daily generation on your phone (needs Wi-Fi at the inverter).", icon: "wifi" },
+];
+
+export type SubsidyOwner = "us" | "discom" | "you";
+
+/** How the central subsidy reaches the customer. `by` is who does the step. */
+export const SUBSIDY_STEPS: ReadonlyArray<{ title: string; body: string; icon: IconName; by: SubsidyOwner }> = [
+  { title: "Register on the national portal", body: "We register you on the PM Surya Ghar portal with your discom, consumer number and mobile.", icon: "laptop", by: "us" },
+  { title: "Apply and get feasibility approval", body: "We submit your rooftop solar application; the discom approves its technical feasibility.", icon: "form", by: "discom" },
+  { title: "Installation by our team", body: "Our team installs your system to the approved design.", icon: "installer", by: "us" },
+  { title: "Net meter and inspection", body: "We apply for the net meter; the discom inspects, installs it and commissions the plant.", icon: "meter", by: "discom" },
+  { title: "Share your bank details", body: "Once the commissioning report is issued, you add your bank account and a cancelled cheque.", icon: "clipboard", by: "you" },
+  { title: "Subsidy credited to your account", body: "The government transfers the subsidy directly to your bank account, typically within about 30 days.", icon: "dbt", by: "discom" },
+];
+
+/** Documents the customer keeps ready for discom and subsidy paperwork. */
+export const SUBSIDY_DOCUMENTS: ReadonlyArray<string> = ["Aadhaar card", "PAN card", "Latest electricity bill", "Cancelled cheque / passbook"];
 
 export const QUOTATION_TERMS: ReadonlyArray<string> = [
   "This quotation is an estimate based on the site survey; final pricing may vary after detailed technical assessment.",
